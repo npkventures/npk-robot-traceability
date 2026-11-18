@@ -17,7 +17,8 @@ test('command contract rejects physical actions, unapproved fields and invented 
  assert.throws(()=>commandInput({action:'report',id:input.id,event_id:randomUUID(),state:'completed',outcome:'cancelled',stop_confirmed:false,reason:'test',observed_at:new Date().toISOString()},true));
 });
 
-async function fixture(){
+const capacityMigration='20261109190000_command_capacity_fix.sql';
+async function fixture(skipCapacityFix=false){
  const db=new PGlite();
  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;
  create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
@@ -25,7 +26,7 @@ async function fixture(){
  create table auth.identities(id uuid primary key,user_id uuid references auth.users,provider text);
  create function auth.uid() returns uuid language sql as $$select (current_setting('request.jwt.claims',true)::jsonb->>'sub')::uuid$$;
  grant usage on schema auth,public to authenticated;`);
- for(const f of(await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort())await db.exec(await readFile('supabase/migrations/'+f,'utf8'));
+ for(const f of(await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')&&(!skipCapacityFix||f!==capacityMigration)).sort())await db.exec(await readFile('supabase/migrations/'+f,'utf8'));
  const org=randomUUID(),other=randomUUID(),owner=randomUUID(),operator=randomUUID(),viewer=randomUUID(),project=randomUUID();
  await db.query("insert into auth.users values($1,'owner@example.invalid',now()),($2,'operator@example.invalid',now()),($3,'viewer@example.invalid',now())",[owner,operator,viewer]);
  await db.query("insert into organizations(id,name) values($1,'Synthetic B10'),($2,'Other synthetic')",[org,other]);
@@ -144,6 +145,51 @@ test('start rechecks changed permission and cancellation after dispatch',async()
  }finally{await db.close();}
 });
 
+test('expired undispatched requests do not exhaust capacity, but uncertain dispatches still do',async()=>{
+ const {db,org,operator,gateway,snapshot,call,enqueue}=await fixture(true);
+ try{
+  const seed=await enqueue();
+  // Synthetic historical rows: no production request or immutable event is rewritten.
+  const seedHistory=async(count,expired)=>db.query(`with copies as materialized (
+   select r.*,gen_random_uuid() new_id,gen_random_uuid() new_correlation,
+    case when $3 then date_trunc('milliseconds',clock_timestamp()-interval '1 hour') else expires_at end deadline
+   from command_requests r cross join generate_series(1,$2::integer) where id=$1)
+   insert into command_requests(org_id,id,correlation_id,gateway_id,project_id,robot_id,snapshot_id,snapshot_revision,requested_by,spec,expires_at)
+   select org_id,new_id,new_correlation,gateway_id,project_id,robot_id,snapshot_id,snapshot_revision,requested_by,
+    spec||jsonb_build_object('id',new_id,'correlation_id',new_correlation,'expires_at',to_char(deadline at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),deadline from copies`,[seed.id,count,expired]);
+  await seedHistory(1000,true);
+  await db.query(`insert into command_states(org_id,id,state)
+   select org_id,id,case when row_number() over(order by id)%2=0 then 'approved' else 'requested' end
+   from command_requests where org_id=$1 and id<>$2`,[org,seed.id]);
+  const before=(await db.query('select * from command_requests where org_id=$1 order by id',[org])).rows;
+  for(const row of before){commandInput(row.spec);assert.equal(row.spec.id,row.id);assert.equal(row.spec.correlation_id,row.correlation_id);assert.equal(Date.parse(row.spec.expires_at),new Date(row.expires_at).getTime());}
+  const eventsBefore=(await db.query('select * from command_events where org_id=$1 order by ordinal',[org])).rows;
+  const next=request(gateway.id,snapshot);
+  await assert.rejects(call(next,operator),/command_queue_full/);
+  const statesBefore=(await db.query('select * from command_states where org_id=$1 order by id',[org])).rows;
+  const grantsBefore=(await db.query('select * from command_grants where org_id=$1 order by machine_id',[org])).rows;
+  await db.exec(await readFile('supabase/migrations/'+capacityMigration,'utf8'));
+  assert.deepEqual((await db.query('select * from command_states where org_id=$1 order by id',[org])).rows,statesBefore);
+  assert.deepEqual((await db.query('select * from command_grants where org_id=$1 order by machine_id',[org])).rows,grantsBefore);
+  for(const role of ['anon','authenticated'])assert.equal((await db.query("select has_function_privilege($1,'public.command_control(uuid,uuid,text,jsonb)','execute') allowed",[role])).rows[0].allowed,false);
+  assert.equal((await db.query("select has_function_privilege('service_role','public.command_control(uuid,uuid,text,jsonb)','execute') allowed")).rows[0].allowed,true);
+  assert.equal((await call(next,operator)).duplicate,false);
+  assert.deepEqual((await db.query('select * from command_requests where org_id=$1 and id<>$2 order by id',[org,next.id])).rows,before);
+  assert.deepEqual((await db.query('select * from command_events where org_id=$1 and command_id<>$2 order by ordinal',[org,next.id])).rows,eventsBefore);
+  // A prior dispatch remains unresolved even after its deadline; do not free those slots.
+  for(const state of ['dispatched','acknowledged','executing','unknown']){
+   await db.query('update command_states set state=$1 where org_id=$2 and id not in ($3,$4)',[state,org,seed.id,next.id]);
+   await assert.rejects(call(request(gateway.id,snapshot),operator),/command_queue_full/);
+  }
+  // Unexpired requests alone still enforce the limit.
+  await db.query("update command_states set state='completed' where org_id=$1 and id not in ($2,$3)",[org,seed.id,next.id]);
+  await seedHistory(998,false);
+  await db.query(`insert into command_states(org_id,id)
+   select r.org_id,r.id from command_requests r left join command_states s using(org_id,id) where r.org_id=$1 and s.id is null`,[org]);
+  await assert.rejects(call(request(gateway.id,snapshot),operator),/command_queue_full/);
+ }finally{await db.close();}
+});
+
 test('human/machine API separates sessions, strict metadata, hashed credentials and feature gate',async()=>{
  Object.assign(process.env,{BETA_ENABLED:'true',BETA_AUTH_LIFECYCLE:'false',BETA_COMMANDS_ENABLED:'true',BETA_ORIGIN:'https://beta.example.invalid',SUPABASE_URL:'https://db.example.invalid',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'server'});
  const actor=randomUUID(),org=randomUUID();let writes=0,role='operator';
@@ -164,9 +210,31 @@ test('human/machine API separates sessions, strict metadata, hashed credentials 
  assert.equal((await handle(human(input))).status,200);
  assert.equal((await handle(human({...input,raw_source:'not allowed'}))).status,400);
  role='';assert.equal((await handle(human(input))).status,403);role='operator';
- const machine=token=>new Request('https://beta.example.invalid/api/v1/commands',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(input)});
+ const machine=(token,body=input)=>new Request('https://beta.example.invalid/api/v1/commands',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body)});
  assert.equal((await handle(machine('um_'+'a'.repeat(64)))).status,200);
  assert.equal((await handle(machine('wrong'))).status,401);
+ const report={action:'report',id:input.id,event_id:randomUUID(),state:'completed',outcome:'succeeded',stop_confirmed:false,reason:'Synthetic observation',observed_at:new Date().toISOString()};
+ for(const body of [
+  ...['get','approve','cancel'].map(action=>({action:[action],id:input.id})),
+  {action:'resolve',id:input.id,outcome:['succeeded'],evidence:'Synthetic reconciliation'},
+ ]){
+  assert.equal((await handle(human(body))).status,400,JSON.stringify(body));
+  assert.equal(writes,2);
+ }
+ for(const body of [
+  ...['get','dispatch'].map(action=>({action:[action],id:input.id})),
+  {...report,state:['completed'],outcome:null},
+  {...report,state:['acknowledged'],outcome:null},
+  {...report,outcome:['succeeded']},
+  {...report,outcome:['cancelled']},
+ ]){
+  assert.equal((await handle(machine('um_'+'a'.repeat(64),body))).status,400,JSON.stringify(body));
+  assert.equal(writes,2);
+ }
+ for(const outcome of ['succeeded','failed','cancelled']){
+  const valid={...report,outcome,stop_confirmed:outcome==='cancelled'};
+  assert.deepEqual(commandInput(valid,true),valid);
+ }
  process.env.BETA_COMMANDS_ENABLED='false';assert.equal((await handle(human(input))).status,503);
  assert.equal(writes,2);
 });

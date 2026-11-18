@@ -107,10 +107,22 @@ export async function connectorRoute(request:Request,cfg:Config,remote:Remote,fe
 // Only signed notifications from configured company settings are accepted.
 // Notifications are hints; metadata is always reconciled through authorized API reads.
 export async function onshapeNotification(request:Request,remote:Remote,raw:string){
- const keyText=process.env.ONSHAPE_WEBHOOK_KEYS;if(!keyText||!verifyOnshapeWebhook(raw,request.headers,JSON.parse(keyText)))return response({error:'Webhook authentication failed.'},401);
- const body=JSON.parse(raw);const org=uuid(new URL(request.url).searchParams.get('org')),connectionId=uuid(new URL(request.url).searchParams.get('connection'));
+ let signingKeys:unknown;
+ try{signingKeys=JSON.parse(process.env.ONSHAPE_WEBHOOK_KEYS??'null');}catch{/* Fail closed without exposing configuration. */}
+ if(!Array.isArray(signingKeys)||!signingKeys.length||!signingKeys.every(key=>typeof key==='string'&&key.trim().length>0))return response({error:'Webhook verification is not configured.'},503);
+ if(!verifyOnshapeWebhook(raw,request.headers,signingKeys))return response({error:'Webhook authentication failed.'},401);
+ const events=['webhook.register','webhook.ping','onshape.model.lifecycle.changed','onshape.model.lifecycle.createversion','onshape.model.translation.complete'];
+ let body,org:string,connectionId:string,messageId:string|undefined;
+ try{
+  body=JSON.parse(raw);
+  if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.event!=='string'||!body.event.trim())throw Error('Invalid notification.');
+  onshapeId(body.documentId);
+  const query=new URL(request.url).searchParams;
+  org=uuid(query.get('org'));connectionId=uuid(query.get('connection'));
+  if(events.includes(body.event))messageId=onshapeId(body.messageId);
+ }catch{return response({error:'Invalid webhook notification.'},400);}
  const rows=await remote(`/rest/v1/integration_connections?org_id=eq.${org}&id=eq.${connectionId}&select=document_id,created_by,status`);
  if(!rows[0]||rows[0].status!=='connected'||body.documentId!==rows[0].document_id)return response({error:'Webhook scope denied.'},403);
- if(!['webhook.register','webhook.ping','onshape.model.lifecycle.changed','onshape.model.lifecycle.createversion','onshape.model.translation.complete'].includes(body.event))return response({ignored:true});
- return response(await connectorCommand(remote)('notification',org,rows[0].created_by,{connection_id:connectionId,message_id:onshapeId(body.messageId),body_hash:digest(raw)}));
+ if(!events.includes(body.event))return response({ignored:true});
+ return response(await connectorCommand(remote)('notification',org,rows[0].created_by,{connection_id:connectionId,message_id:messageId,body_hash:digest(raw)}));
 }

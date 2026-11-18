@@ -34,7 +34,7 @@ export default function Demo({ workspaceAvailable = false }: { workspaceAvailabl
   return <div className="demo-app">
     <a className="skip-link" href="#demo-main">Skip to demo</a>
     <div className="demo-banner">SYNTHETIC DEMO · All robots, records, people, and outcomes are invented. No uploads or robot connection.</div>
-    <header className="demo-header"><a className="wordmark" href="/">Tavrik</a><span>Example records</span><nav aria-label="Main navigation"><a className="home-link" href="/">Home</a>{workspaceAvailable && <a href="/workspace/">Workspace</a>}<a href="/compatibility/">Compatibility</a><a href="/security/">Security</a></nav></header>
+    <header className="demo-header"><a className="wordmark" href="/">Tav</a><span>Example records</span><nav aria-label="Main navigation"><a className="home-link" href="/">Home</a>{workspaceAvailable && <a href="/workspace/">Workspace</a>}<a href="/compatibility/">Compatibility</a><a href="/security/">Security</a></nav></header>
     <main id="demo-main" className="demo-main">
       <div className="demo-title"><p className="eyebrow">FROM “IT WORKED” TO “WHAT CHANGED?”</p><h1>Robot test history</h1><p>Inspect a run. Choose a successful baseline. Investigate recorded differences.</p></div>
       <div className="demo-layout">

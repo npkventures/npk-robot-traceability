@@ -16,12 +16,17 @@ export class ProviderError extends Error{status:number;uncertain:boolean;constru
 export async function providerJSON(fetcher:typeof fetch,url:string,init:RequestInit,write=false){
  let response:Response;
  try{response=await fetcher(url,{...init,redirect:'error',signal:AbortSignal.timeout(15000)});}catch{throw new ProviderError(503,write);}
- if(!response.ok)throw new ProviderError(response.status,write&&response.status>=500);
- if(!response.headers.get('content-type')?.includes('application/json'))throw new ProviderError(502,write);
+ const mediaType=response.headers.get('content-type')?.split(';',1)[0].trim().toLowerCase();
+ if(!response.ok||mediaType!=='application/json'){
+  // Discard unread bodies without letting stalled cleanup delay the original error.
+  void response.body?.cancel().catch(()=>{});
+  throw new ProviderError(response.ok?502:response.status,write&&(response.ok||response.status>=500));
+ }
  const reader=response.body?.getReader();if(!reader)throw new ProviderError(502,write);
  let size=0;const chunks:Uint8Array[]=[];
- try{while(true){const item=await reader.read();if(item.done)break;size+=item.value.length;if(size>2097152){await reader.cancel();throw Error('oversized');}chunks.push(item.value);}return JSON.parse(Buffer.concat(chunks).toString('utf8'));}
+ try{while(true){const item=await reader.read();if(item.done)break;size+=item.value.length;if(size>2097152){void reader.cancel().catch(()=>{});throw Error('oversized');}chunks.push(item.value);}return JSON.parse(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(Buffer.concat(chunks)));}
  catch{throw new ProviderError(502,write);}
+ finally{reader.releaseLock();}
 }
 export async function tokenExchange(fetcher:typeof fetch,params:Record<string,string>):Promise<Tokens>{
  const cfg=oauthConfig();
@@ -64,7 +69,7 @@ export async function useOnshape<T>(command:Command,fetcher:typeof fetch,org:str
 }
 export type CadReference={provider:'onshape';documentId:string;elementId:string;microversionId:string;versionId:string|null;name:string;capturedAt:string;url:string;installation:'not_verified'};
 export async function captureReference(c:Connection,call:(path:string)=>Promise<any>,input:Record<string,unknown>):Promise<CadReference>{
- const kind=input.kind;if(!['w','v','m'].includes(String(kind)))throw Error('Choose workspace, version or microversion.');
+ const kind=input.kind;if(typeof kind!=='string'||!['w','v','m'].includes(kind))throw Error('Choose workspace, version or microversion.');
  const reference=onshapeId(input.reference_id),element=onshapeId(input.element_id);
  const microversion=kind==='m'?reference:onshapeId((await call(`/api/v10/documents/d/${c.document_id}/${kind}/${reference}/currentmicroversion`)).microversion);
  const elements=await call(`/api/v10/documents/d/${c.document_id}/m/${microversion}/elements`);

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MarketingShell, PageIntro } from '../marketing-shell';
-export const metadata: Metadata = { title: 'Tavrik — Synthetic walkthrough and supported inputs', description: 'Compare successful and failed robot tests, inspect recorded differences and understand supported metadata inputs.', alternates: { canonical: '/walkthrough/' } };
+export const metadata: Metadata = { title: 'Tav — Synthetic walkthrough and supported inputs', description: 'Compare successful and failed robot tests, inspect recorded differences and understand supported metadata inputs.', alternates: { canonical: '/walkthrough/' } };
 export default function WalkthroughPage() {
   return <MarketingShell active="Services"><PageIntro number="01.4" label="SYNTHETIC WALKTHROUGH" title="From a failed test to a clearer record." text="Follow an invented manipulation test. Inspect what changed, what is missing and what an engineer would investigate next." />
     <div className="m-wrap m-content">

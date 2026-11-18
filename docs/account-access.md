@@ -8,7 +8,7 @@ Open http://127.0.0.1:3002. Choose **New here? Create an account**, enter your e
 
 Administrator-prepared accounts sign in with their assigned password after email verification. **Resend confirmation email** uses the email entered in the form. **Forgot password?** sends a reset link. The signed-in **Change password** button also opens password setup. Save/export drafts first; completing a password change signs you out. Password managers and paste work; forms have show/hide controls and matching-password validation. Do not put passwords in chat or bug reports.
 
-After sign-in, choose an organization. Without membership, use **Accept an invitation** with the token shared by the team owner. Organization invitation tokens are separate from Supabase email confirmation; Tavrik does not automatically email these tokens.
+After sign-in, choose an organization. Without membership, use **Accept an invitation** with the token shared by the team owner. Organization invitation tokens are separate from Supabase email confirmation; Tav does not automatically email these tokens.
 
 Use **Try the demo without signing in** to load synthetic examples or create test robots. Drafts stay in that browser tab until exported; this demo does not save to an organization's hosted workspace.
 

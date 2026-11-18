@@ -1,4 +1,4 @@
-# Tavrik backend master plan and implementation prompts
+# Tav backend master plan and implementation prompts
 
 Prepared October 15, 2026. Project: `C:\Users\carte\Desktop\npk-unify`.
 
@@ -27,7 +27,7 @@ The original Prompt 6 has been implemented in code. Begin with B1, which verifie
 ## Master context — paste first
 
 ```text
-You are implementing the Tavrik robotics backend in C:\Users\carte\Desktop\npk-unify.
+You are implementing the Tav robotics backend in C:\Users\carte\Desktop\npk-unify.
 
 Read AGENTS.md, the full build.md, current build progress, applicable skills and affected code before planning edits. Preserve unrelated work. Inspect what actually exists and distinguish implemented, locally tested, live verified and customer validated states. Follow repository preflight and review requirements.
 

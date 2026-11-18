@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {mkdtempSync,writeFileSync,readFileSync,readdirSync,unlinkSync,rmdirSync,mkdirSync} from 'node:fs';
+import {mkdtempSync,writeFileSync,readFileSync,readdirSync,unlinkSync,rmdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -44,12 +44,12 @@ test('readiness API requires current project access and does not expose private 
  const r=await handle(request());assert.equal(r.status,200);assert.deepEqual(await r.json(),predictionReadiness());allowed=false;assert.equal((await handle(request())).status,403);
 });
 test('offline CLI preserves private artifacts, rejects repository paths including dot-prefixed directories',()=>{
- const directory=mkdtempSync(join(tmpdir(),'tavrik-evaluation-test-')),input=join(directory,'input.json'),local=resolve('.cache/..prediction-test-'+randomUUID());
+ const directory=mkdtempSync(join(tmpdir(),'tavrik-evaluation-test-')),input=join(directory,'input.json'),local=mkdtempSync(resolve('..prediction-test-'));
  try{
   writeFileSync(input,JSON.stringify(dataset()));
   const output=execFileSync(process.execPath,['--experimental-strip-types','scripts/evaluate-predictions.mjs',input,directory,'synthetic-test-reviewer'],{encoding:'utf8',windowsHide:true});
   assert.equal(JSON.parse(output).available,false);
   const file=readdirSync(directory).find(f=>f.startsWith('evaluation-'));const artifact=JSON.parse(readFileSync(join(directory,file),'utf8'));assert.equal(artifact.dataset.cohort.reality,'simulation');assert.equal(artifact.registry.state,artifact.evaluation.state);
-  mkdirSync(local);assert.throws(()=>execFileSync(process.execPath,['--experimental-strip-types','scripts/evaluate-predictions.mjs',input,local,'test'],{stdio:'pipe',windowsHide:true}));
+  assert.throws(()=>execFileSync(process.execPath,['--experimental-strip-types','scripts/evaluate-predictions.mjs',input,local,'test'],{stdio:'pipe',windowsHide:true}));
  }finally{for(const file of readdirSync(directory))unlinkSync(join(directory,file));rmdirSync(directory);try{rmdirSync(local);}catch{}}
 });

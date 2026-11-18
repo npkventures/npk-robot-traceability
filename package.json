@@ -1,8 +1,10 @@
 {
-  "name": "tavrik-outreach",
+  "name": "tav-outreach",
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "package:extension": "node scripts/package-extension.mjs",
+    "test:extension": "playwright test --config playwright.extension.config.ts",
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build && node scripts/exclude-local-export.mjs",
     "typecheck": "tsc --noEmit",

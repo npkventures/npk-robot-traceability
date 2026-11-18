@@ -3,7 +3,7 @@ import { readSiteConfig } from "../lib/site-config.mjs";
 import "./globals.css";
 
 const config = readSiteConfig();
-const title = "Tavrik — Know what changed. Keep the setup that worked.";
+const title = "Tav — Know what changed. Keep the setup that worked.";
 const description = "Configuration history for ROS 2 manipulation teams. Compare grippers, firmware, calibration, policies, and dataset versions in a working synthetic prototype.";
 
 export const metadata: Metadata = {

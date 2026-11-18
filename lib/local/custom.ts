@@ -64,7 +64,7 @@ export function validateMapping(value: unknown): asserts value is Mapping {
 export function parseMapping(text: string): Mapping {
   const envelope = strictJSON(text);
   object(envelope, ['format', 'version', 'mapping']);
-  if (envelope.format !== 'unify-mapping' || envelope.version !== 1) fail('expected a Tavrik mapping file, version 1.');
+  if (envelope.format !== 'unify-mapping' || envelope.version !== 1) fail('expected a Tav mapping file, version 1.');
   validateMapping(envelope.mapping); return envelope.mapping;
 }
 export function exportMapping(mapping: Mapping): string { validateMapping(mapping); return JSON.stringify({ format: 'unify-mapping', version: 1, mapping }, null, 2); }

@@ -49,6 +49,8 @@ Update `docs/build-progress.md` after every task with scope, delivered files/beh
 
 Final responses state what changed, what was checked, and material remaining limitations. Never claim these instructions technically prevent all future agents from skipping context: they are a required repository workflow, not an execution lock.
 
+When an active goal's full completion audit passes, call the goal tool to mark it complete, deliver the final result, and stop. Do not start another goal or continue optional work after completion without a new user request. The repository's [goal completion hook](docs/codex-goal-stop.md) observes successful goal-tool responses; it does not replace the audit or determine whether the backend is clean.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

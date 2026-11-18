@@ -3,6 +3,30 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {createHandler} from '../../lib/beta/server.ts';
 import {portalStream} from '../../lib/beta/portal-stream.ts';
+test('aborting a stalled subscription closes pending reads before the check settles',async()=>{
+ for(const fails of [false,true]){
+  const abort=new AbortController();let settle,started;
+  const checking=new Promise(resolve=>{started=resolve;});
+  const reader=portalStream(()=>new Promise((resolve,reject)=>{settle=()=>fails?reject(Error('private upstream error')):resolve('late');started();}),abort.signal).getReader();
+  const pending=reader.read();await checking;abort.abort();
+  let timer;
+  try{
+   const result=await Promise.race([pending,new Promise(resolve=>{timer=setTimeout(()=>resolve('still waiting'),100);})]);
+   assert.deepEqual(result,{value:undefined,done:true});
+  }finally{clearTimeout(timer);settle();await pending;}
+  assert.equal((await reader.read()).done,true);
+ }
+});
+test('aborting between subscription checks closes immediately without another check',async()=>{
+ const abort=new AbortController();let calls=0;
+ const reader=portalStream(async()=>{calls++;return '1:2';},abort.signal,60000).getReader();
+ await reader.read();const pending=reader.read();
+ await new Promise(resolve=>setImmediate(resolve));abort.abort();
+ assert.equal((await pending).done,true);assert.equal(calls,1);
+ const alreadyAborted=new AbortController();alreadyAborted.abort();
+ const closed=portalStream(async()=>{throw Error('must not check');},alreadyAborted.signal).getReader();
+ assert.equal((await closed.read()).done,true);
+});
 test('subscription sends only watermarks, stops after revoked access and cancels cleanly',async()=>{
  let count=0;
  const reader=portalStream(async()=>{if(++count>1)throw Error('revoked');return '1:2';},new AbortController().signal,1).getReader();

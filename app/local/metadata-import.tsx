@@ -40,7 +40,7 @@ export default function MetadataImport({ bundle, robotId, save }: { bundle: Bund
     try {
       if (!mapping) return;
       const url = URL.createObjectURL(new Blob([exportMapping(mapping)], { type: 'application/json' }));
-      const link = window.document.createElement('a'); link.href = url; link.download = 'tavrik-mapping.json'; link.click();
+      const link = window.document.createElement('a'); link.href = url; link.download = 'tav-mapping.json'; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (e) { failed(e); }
   }

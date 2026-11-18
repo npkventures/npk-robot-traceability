@@ -24,7 +24,7 @@ export default function ReportList({org,project,api}:{org:string;project:string;
    if(current!==version.current)return;
    if(result.rows.length!==1)throw Error('Report is no longer available.');
    const url=URL.createObjectURL(new Blob([JSON.stringify(result.rows[0].payload,null,2)],{type:'application/json'}));
-   const anchor=document.createElement('a');anchor.href=url;anchor.download=`tavrik-report-${report.report_id}-r${report.revision}.json`;anchor.click();URL.revokeObjectURL(url);
+   const anchor=document.createElement('a');anchor.href=url;anchor.download=`tav-report-${report.report_id}-r${report.revision}.json`;anchor.click();URL.revokeObjectURL(url);
   }catch(e){if(current===version.current){setRows([]);setUpdated('');setError(e instanceof Error?e.message:'Download unavailable.');}}
   finally{if(current===version.current)setBusy(false);}
  }

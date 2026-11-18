@@ -4,15 +4,15 @@ import { MarketingShell, PageIntro } from '../marketing-shell';
 import { readSiteConfig } from '../../lib/site-config.mjs';
 
 export const metadata: Metadata = {
-  title: 'About — Tavrik',
-  description: 'Our mission, our goal, and a direct connection to the Tavrik founders.',
+  title: 'About — Tav',
+  description: 'Our mission, our goal, and a direct connection to the Tav founders.',
   alternates: { canonical: '/about/' },
 };
 
 export default function AboutPage() {
   const config = readSiteConfig();
   return <MarketingShell active="About">
-    <PageIntro number="03" label="ABOUT Tavrik" title="Clarity before conclusions." text="We’re building a clearer history of robot development, starting with the configuration behind each test." />
+    <PageIntro number="03" label="ABOUT Tav" title="Clarity before conclusions." text="We’re building a clearer history of robot development, starting with the configuration behind each test." />
     <div className="m-wrap m-content">
       <nav className="m-about-nav" aria-label="About sections">
         <a className="m-text-link" href="#mission">Our mission</a>
@@ -28,7 +28,7 @@ export default function AboutPage() {
         <div><h3>Know what changed. Keep the setup that worked.</h3><p>Our goal is to make configuration history a useful part of everyday testing: record the setup, compare runs, and retain an exact reference to the configuration that succeeded.</p><p>We’re starting with commercial ROS 2 manipulation teams developing arms for picking, sorting, and machine tending. A comparison shows recorded differences and missing evidence; engineers decide what those differences mean.</p><p className="m-note">The local workspace and synthetic demo are implemented. Shared hosting and automated collection remain planned; customer outcomes are not yet validated.</p></div>
       </section>
       <section className="m-split" id="founders" aria-labelledby="founders-title">
-        <div><p className="m-kicker">03 / LET’S TALK</p><h2 id="founders-title">Contact the founders</h2><p>Tavrik is founder-led. Talk directly with us about your team, your testing workflow, or a recent regression.</p></div>
+        <div><p className="m-kicker">03 / LET’S TALK</p><h2 id="founders-title">Contact the founders</h2><p>Tav is founder-led. Talk directly with us about your team, your testing workflow, or a recent regression.</p></div>
         <div>{config.contactUrl ? <>
           <a className="m-button" href={config.contactUrl}>Email the founders <span aria-hidden="true">↗</span></a>
           <p className="m-small">Opens your email app or configured contact service. Nothing is sent automatically.</p>

@@ -13,6 +13,28 @@ const attempt={job_id:randomUUID(),attempt_id:randomUUID(),retry_of:null,robot_i
  procedure:known('pick'),procedure_version:known('v2'),task:known('tray'),environment:{state:'unknown',reason:'Not measured'},components:known('gripper-01 revision A'),reality:'synthetic',method:'manual'};
 const event=(n,kind,payload,extra={})=>({event_id:randomUUID(),source_identity:source,source_sequence:n,observed_at:'2026-10-24T10:00:00.000Z',kind,payload,correction_of:null,reason:null,received_at:'2026-10-24T11:00:00.000Z',author:'synthetic-engineer',...extra});
 const state=(n,s,extra={})=>event(n,'state',{state:s},extra);
+test('lifecycle enums reject coerced arrays while preserving valid evidence values',()=>{
+ for(const reality of ['real','simulation','synthetic']){
+  assert.equal(validateAttempt({...attempt,reality}).reality,reality);
+  assert.throws(()=>validateAttempt({...attempt,reality:[reality]}));
+ }
+ for(const method of ['manual','collector']){
+  assert.equal(validateAttempt({...attempt,method}).method,method);
+  assert.throws(()=>validateAttempt({...attempt,method:[method]}));
+ }
+ for(const value of ['known','unknown','not-applicable']){
+  const payload={name:'distance',state:value,value:value==='known'?1:null,unit:'m',reason:value==='known'?null:'Not measured'};
+  const {author,received_at,...raw}=event(1,'measurement',payload);
+  assert.equal(validateLifecycleEvent(raw).payload.state,value);
+  // Array-valued "known" previously took the missing-value branch.
+  assert.throws(()=>validateLifecycleEvent({...raw,payload:{...payload,state:[value],value:null,reason:'Not measured'}}));
+ }
+ for(const action of ['installed','removed','maintained','serviced']){
+  const {author,received_at,...raw}=event(1,'component',{component_id:'gripper',action,evidence:'Manual observation',hours:null,cycles:null});
+  assert.equal(validateLifecycleEvent(raw).payload.action,action);
+  assert.throws(()=>validateLifecycleEvent({...raw,payload:{...raw.payload,action:[action]}}));
+ }
+});
 test('lifecycle acknowledgement, timeout and delayed completion preserve uncertainty',()=>{
  assert.equal(projectAttempt(attempt,[]).state,'unknown');
  const ack=event(1,'acknowledged',{});assert.equal(projectAttempt(attempt,[ack]).completion_observed,false);

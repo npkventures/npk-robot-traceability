@@ -14,6 +14,7 @@ export function reportQuery(url:URL){
 }
 export function validateReportPage(result:any){for(const row of result.rows)validatePublishedReport(row.payload);return result;}
 export async function reportRoute(remote:Remote,read:(table:string,query:string)=>Promise<any>,org:string,actor:string,data:Record<string,unknown>){
+ if(typeof data.action!=='string')throw Error('Unsupported report operation.');
  const admin=(p_data:unknown)=>remote('/rest/v1/rpc/report_admin','POST',{p_org:org,p_actor:actor,p_data});
  if(data.action==='preview'||data.action==='publish'){
   exactReport(data,data.action==='preview'?['action','selection']:['action','selection','reviewed_cutoffs','approved']);
@@ -33,7 +34,7 @@ export async function reportRoute(remote:Remote,read:(table:string,query:string)
   validatePublishedReport(result.report);return result;
  }
  if(data.action==='list'){exactReport(data,['action']);return admin(data);}
- if(['revoke_credential','revoke_endpoint','replay'].includes(String(data.action))){exactReport(data,['action','id']);return admin({...data,id:machineId(data.id)});}
+ if(['revoke_credential','revoke_endpoint','replay'].includes(data.action)){exactReport(data,['action','id']);return admin({...data,id:machineId(data.id)});}
  if(data.action==='credential'){
   exactReport(data,['action','project_id','recipient','days']);
   if(!Number.isSafeInteger(data.days)||Number(data.days)<1||Number(data.days)>90)throw Error('Credential expiry must be 1–90 days.');

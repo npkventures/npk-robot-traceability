@@ -17,6 +17,7 @@ export default function MarketingHome() {
         <p className="m-lead" data-hero>A record of the hardware, software, and calibration behind each test. Built for ROS 2 manipulation teams.</p>
         <div data-hero><Link className="m-button" href={localWorkspace ? '/workspace/' : '/demo/'}>{localWorkspace ? 'Open workspace' : 'Explore the working demo'} <span aria-hidden="true">↗</span></Link>
           <p className="m-small">{localWorkspace ? 'Local records. Save your work with JSON export.' : 'Synthetic records. Real comparison controls.'}</p></div>
+        <div className="m-extension-callout" data-hero><span className="m-kicker">TAV FOR CHROME</span><Link className="m-text-link" href="/extensions/">Get the Chrome extension <span aria-hidden="true">↗</span></Link><p className="m-small">Bring reviewed website references into your robot history. Local installation available.</p></div>
       </div>
       <div className="m-hero-art" data-hero-art><div className="m-art-heading"><span>THE RECORDED SETUP</span><span>STUDY / 01</span></div><RecordSculpture /><p>Physical changes.<br /><em>Digital context.</em></p></div>
     </section>

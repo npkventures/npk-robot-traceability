@@ -7,9 +7,11 @@ import tempfile
 import unittest
 import uuid
 import sys
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import command_runner as runner
+from test_upload_queue import http_reply
 
 
 class FakeServer:
@@ -129,6 +131,21 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(self.run_step()['state'], 'unknown')
         self.assertEqual(self.executions, [])
 
+    def test_missing_journal_requires_literal_first_dispatch_confirmation(self):
+        for first in ('false', 'true', 1, [], {}, None):
+            with self.subTest(first=first), tempfile.TemporaryDirectory() as temp:
+                server = FakeServer(); executed = []
+                server.state = 'dispatched'
+                def transport(data):
+                    result = server(data)
+                    if data['action'] == 'dispatch': result['first_dispatch'] = first
+                    return result
+                result = runner.run_step(Path(temp), 'synthetic-endpoint', server.id, server.gateway,
+                                         transport, lambda: server.context, executed.append)
+                self.assertEqual(result['state'], 'unknown')
+                self.assertEqual(executed, [])
+                self.assertFalse(any(call.get('state') == 'executing' for call in server.calls))
+
     def test_identity_and_immutable_request_conflicts(self):
         self.server.lose = 'acknowledged'
         with self.assertRaises(OSError):
@@ -148,6 +165,17 @@ class CommandTests(unittest.TestCase):
         self.server.request['spec']['kind'] = 'ur.move'
         with self.assertRaises(ValueError):
             self.run_step()
+        self.assertEqual(self.executions, [])
+
+    def test_transport_rejects_incomplete_dispatch_without_execution_or_replay(self):
+        body = json.dumps(self.server({'action': 'dispatch', 'id': self.server.id})).encode()
+        response = http_reply(body, ('Content-Length: %d\r\n' % (len(body)+10)).encode())
+        transport = runner.Transport('https://synthetic.example.invalid/api/v1/commands', 'um_'+'a'*64)
+        with patch.object(transport.opener, 'open', return_value=response) as opened:
+            with self.assertRaises(ValueError):
+                runner.run_step(self.directory, transport.endpoint, self.server.id, self.server.gateway,
+                                transport, lambda: self.server.context, self.executions.append)
+        self.assertEqual(opened.call_count, 1)
         self.assertEqual(self.executions, [])
 
 

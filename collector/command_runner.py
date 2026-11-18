@@ -15,6 +15,7 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import lifecycle_events as fields
+from http_response import read_json_response
 from upload_queue import NoRedirect, queue_lock, queue_path, sync_directory
 
 
@@ -49,10 +50,7 @@ class Transport:
         request = urllib.request.Request(self.endpoint, data=canonical(data).encode(), method='POST',
                                          headers={'Authorization': 'Bearer '+self.token, 'Content-Type': 'application/json'})
         with self.opener.open(request, timeout=15) as response:
-            raw = response.read(131073)
-            if response.status != 200 or len(raw) > 131072:
-                raise ValueError('Command response unavailable. Journal retained.')
-            result = json.loads(raw)
+            result = read_json_response(response, 131072)
             if not isinstance(result, dict):
                 raise ValueError('Invalid command response.')
             return result
@@ -136,7 +134,7 @@ def run_step(directory, endpoint_identity, command_id, gateway_id, transport, co
                 db.execute('insert into commands values(?,?,?,?,?,null)', (command_id, binding, fingerprint, canonical(request), 'prepared'))
                 db.commit()
                 # Lost journal / lost first dispatch response is deliberately fail-closed.
-                if not delivered.get('first_dispatch'):
+                if delivered.get('first_dispatch') is not True:
                     evidence = report('unknown', 'No local journal for an already dispatched request; operator reconciliation required.')
                     save('unknown', evidence)
                     return transport(evidence)

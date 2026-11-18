@@ -10,8 +10,16 @@ export function claims(access: string): { sub?: string; session_id?: string; exp
   try{return JSON.parse(Buffer.from(access.split('.')[1],'base64url').toString());}catch{return {};}
 }
 export function recentAuthentication(access: string){return claims(access).amr?.some(a=>['password','oauth'].includes(a.method)&&Number.isFinite(a.timestamp)&&a.timestamp<=Date.now()/1000+30&&a.timestamp>Date.now()/1000-600)??false;}
-export function sessionResponse(cfg: Config, session: {access_token: string; refresh_token?: string; expires_in: number}, location?: string) {
-  if(typeof session.access_token!=='string'||!Number.isFinite(session.expires_in)||session.expires_in<=0)throw Error('Invalid authentication response.');
+type Session = {access_token: string; refresh_token?: string | null; expires_in: number};
+export function validSession(input: unknown): input is Session {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return false;
+  const session = input as Record<string, unknown>;
+  return typeof session.access_token === 'string' && !!session.access_token.trim()
+    && typeof session.expires_in === 'number' && Number.isSafeInteger(session.expires_in) && session.expires_in > 0
+    && (session.refresh_token == null || session.refresh_token === '' || (typeof session.refresh_token === 'string' && !!session.refresh_token.trim()));
+}
+export function sessionResponse(cfg: Config, session: Session, location?: string) {
+  if(!validSession(session))throw Error('Invalid authentication response.');
   const headers=new Headers({'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});
   headers.append('Set-Cookie',cookie(cfg,'unify_session',session.access_token,Math.max(1,Math.min(3600,session.expires_in))));
   headers.append('Set-Cookie',cookie(cfg,'unify_refresh',session.refresh_token??'',session.refresh_token?2592000:0));

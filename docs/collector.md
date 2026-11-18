@@ -85,7 +85,7 @@ Opt in with this configuration instead of `settings`:
 "ros2": { "node": "/gripper", "parameter": "grip_force", "timeoutSeconds": 3 }
 ```
 
-In a sourced ROS 2 environment, this invokes `ros2 param get --hide-type /gripper grip_force`. Only this numeric parameter is permitted, mapped to grip force in newtons; confirm your node uses that unit. There are no parameter writes or broad dumps. Timeout must be 0.1–10 seconds; stdout is capped at 128 bytes. Missing ROS, timeouts, invalid output and negative/nonfinite values become unknown. ROS may use the configured ROS/DDS network to read that parameter, including during dry-run; no Tavrik ingestion/upload exists. This adapter's command handling is tested with synthetic substitutes; live robot/ROS behavior requires an engineer trial.
+In a sourced ROS 2 environment, this invokes `ros2 param get --hide-type /gripper grip_force`. Only this numeric parameter is permitted, mapped to grip force in newtons; confirm your node uses that unit. There are no parameter writes or broad dumps. Timeout must be 0.1–10 seconds; stdout is capped at 128 bytes. Missing ROS, timeouts, invalid output and negative/nonfinite values become unknown. ROS may use the configured ROS/DDS network to read that parameter, including during dry-run; no Tav ingestion/upload exists. This adapter's command handling is tested with synthetic substitutes; live robot/ROS behavior requires an engineer trial.
 
 ## Verification
 

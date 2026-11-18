@@ -17,7 +17,7 @@ for (const width of [320, 390, 768, 1440]) {
 }
 test('metadata, keyboard entry, and preview contact are honest', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/Tavrik/);
+  await expect(page).toHaveTitle(/Tav \u2014/);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /ROS 2/);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
   await page.keyboard.press('Tab');

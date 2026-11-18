@@ -1,8 +1,8 @@
-# Tavrik sales model
+# Tav sales model
 
-Prepared October 12, 2026. Recommendation based on the current implementation, [business brief](../build.md) sections 2, 5, 7–9, and the official vendor pages linked below. Comparable sites demonstrate buying paths, not evidence that Tavrik's pricing or demand is validated.
+Prepared October 12, 2026. Recommendation based on the current implementation, [business brief](../build.md) sections 2, 5, 7–9, and the official vendor pages linked below. Comparable sites demonstrate buying paths, not evidence that Tav's pricing or demand is validated.
 
-**Tavrik should initially sell through founder-led demonstrations and scoped paid pilots. The website introduces the product and starts the conversation; a customer does not currently buy, sign in and start using a hosted workspace.**
+**Tav should initially sell through founder-led demonstrations and scoped paid pilots. The website introduces the product and starts the conversation; a customer does not currently buy, sign in and start using a hosted workspace.**
 
 ## Current setup
 
@@ -10,13 +10,13 @@ The website contains a synthetic demonstration, founder contact links and a prop
 
 ## What comparable sites do
 
-| Company | Public buying path | Useful lesson for Tavrik |
+| Company | Public buying path | Useful lesson for Tav |
 | --- | --- | --- |
 | [Foxglove](https://foxglove.dev/pricing) | Free signup, a published Pro plan with additional usage charges, and custom Enterprise pricing through contact with sales. | Combine an accessible demonstration with a sales conversation for more involved deployments. |
 | [Formant](https://www.formant.ai/contact) | Contact/discovery asks about robot types, use case, deployment stage and decision timeline. | Qualify technical fit and the buying decision before proposing scope. |
 | [Viam](https://www.viam.com/pricing) | Developer platform starts free and charges for cloud usage; packaged robotic solutions use tailored pricing and consultation. | The buying process can differ between a standard software product and an assisted deployment. |
 
-These are adjacent robotics platforms with different scope; their prices are not direct benchmarks for Tavrik.
+These are adjacent robotics platforms with different scope; their prices are not direct benchmarks for Tav.
 
 ## Recommended customer journey
 
