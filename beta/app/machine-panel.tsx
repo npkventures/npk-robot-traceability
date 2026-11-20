@@ -13,7 +13,7 @@ export default function MachinePanel({org,api}:{org:string;api:(path:string,body
  return <section aria-label="Machine identities"><details><summary>Machine identities and ingestion</summary>
  <p>Scoped metadata uploads for collectors, gateways and API clients. These credentials cannot execute robot jobs or read internal records.</p>
  <button disabled={busy} onClick={()=>void action()}>Refresh ingestion health</button>
- <p>Last refreshed: {updated||'Not loaded'}. Last seen means an authenticated request reached Tavrik; silence does not prove a device failed.</p>
+ <p>Last refreshed: {updated||'Not loaded'}. Last seen means an authenticated request reached Tav; silence does not prove a device failed.</p>
  {!data.scopes.length&&<p>Assign a saved robot to a project under Teams, clients and project access before issuing an identity.</p>}
  <form onSubmit={e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.currentTarget));const scope=data.scopes[Number(d.scope)];if(scope)void action({...d,action:'create',project_id:scope.project_id,robot_id:scope.robot_id});}}>
  <label>Identity name<input name="name" required maxLength={120}/></label>

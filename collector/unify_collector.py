@@ -1,4 +1,4 @@
-"""Tavrik local metadata collector. Python 3.10+, no third-party dependencies."""
+"""Tav local metadata collector. Python 3.10+, no third-party dependencies."""
 import argparse
 import copy
 from datetime import datetime, timezone
@@ -249,7 +249,7 @@ def capture(config, base):
     author = text(config.get('author'), 'author')
     captured = now()
     values = {k: unknown() for k in FIELDS}
-    provenance = {k: {'source': 'Tavrik local collector', 'method': 'Missing information declaration', 'author': author, 'observedAt': captured, 'recordedAt': captured, 'evidence': 'No evidence supplied', 'available': False} for k in FIELDS}
+    provenance = {k: {'source': 'Tav local collector', 'method': 'Missing information declaration', 'author': author, 'observedAt': captured, 'recordedAt': captured, 'evidence': 'No evidence supplied', 'available': False} for k in FIELDS}
     provenance['hardware']['method'] = 'Manual hardware report unavailable'
     def path(name):
         return Path(base) / text(config[name], f'config.{name}', 4096)

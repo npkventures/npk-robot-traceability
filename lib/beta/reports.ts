@@ -56,11 +56,11 @@ export function validatePublishedReport(v:unknown){
   exactReport(run,['attempt_id','job_id','robot_id','snapshot','reality','method','outcome','duration','measurements','evidence']);
   machineId(run.attempt_id);machineId(run.job_id);reportText(run.robot_id,120);
   exactReport(run.snapshot,['id','revision']);reportText(run.snapshot.id,120);if(!Number.isSafeInteger(run.snapshot.revision)||Number(run.snapshot.revision)<1)throw Error('Invalid snapshot revision.');
-  if(!['real','simulation','synthetic'].includes(String(run.reality))||!['manual','collector'].includes(String(run.method))||!['requested','queued','running','succeeded','failed','cancelled','timed-out','unknown'].includes(String(run.outcome)))throw Error('Invalid report evidence.');
+  if(typeof run.reality!=='string'||!['real','simulation','synthetic'].includes(run.reality)||typeof run.method!=='string'||!['manual','collector'].includes(run.method)||typeof run.outcome!=='string'||!['requested','queued','running','succeeded','failed','cancelled','timed-out','unknown'].includes(run.outcome))throw Error('Invalid report evidence.');
   if(!Array.isArray(run.measurements)||run.measurements.length>10)throw Error('Invalid measurements.');
   for(const m of [run.duration,...run.measurements]){
    exactReport(m,['name','state','value','unit']);reportText(m.name,120);
-   if(!['known','unknown','not-applicable'].includes(String(m.state))||(m.state==='known'?(typeof m.value!=='number'||!Number.isFinite(m.value)||m.unit===null):m.value!==null))throw Error('Invalid measurement state.');
+   if(typeof m.state!=='string'||!['known','unknown','not-applicable'].includes(m.state)||(m.state==='known'?(typeof m.value!=='number'||!Number.isFinite(m.value)||m.unit===null):m.value!==null))throw Error('Invalid measurement state.');
    if(m.unit!==null)reportText(m.unit,40);
   }
   exactReport(run.evidence,['completion_observed','uncertainty','selected_measurements_known','selected_measurements_total']);

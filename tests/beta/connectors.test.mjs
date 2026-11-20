@@ -32,6 +32,19 @@ test('provider write transport ambiguity is never retried and releases its lease
  await assert.rejects(useOnshape(command,async()=>{sent++;throw Error('lost response');},org,randomUUID(),id,async(c,call)=>call('/api/v10/documents/d/'+did+'/versions',{})),/unknown/);
  assert.equal(sent,1);assert.equal(released,true);
 });
+test('CAD reference kinds reject coercible arrays before provider reads',async()=>{
+ for(const kind of [['w'],['v'],['m']]){
+  let reads=0;
+  await assert.rejects(captureReference({document_id:did},async path=>{reads++;return path.endsWith('currentmicroversion')?{microversion:mid}:[{id:eid,name:'Synthetic'}];},{kind,reference_id:vid,element_id:eid}));
+  assert.equal(reads,0);
+ }
+ for(const kind of ['w','v','m']){
+  const paths=[];
+  const ref=await captureReference({document_id:did},async path=>{paths.push(path);return path.endsWith('currentmicroversion')?{microversion:mid}:[{id:eid,name:'Synthetic'}];},{kind,reference_id:vid,element_id:eid});
+  assert.equal(ref.versionId,kind==='v'?vid:null);assert.equal(ref.microversionId,kind==='m'?vid:mid);
+  assert.equal(paths.length,kind==='m'?1:2);
+ }
+});
 test('connector schema enforces tenant scope, refresh exclusion, revocation, OAuth replay, budgets and uncertain job recovery',async()=>{
  const db=new PGlite();try{
  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;

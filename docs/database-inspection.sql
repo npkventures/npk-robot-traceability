@@ -1,4 +1,4 @@
--- Tavrik: run in the selected project's SQL editor. Read-only; no token values.
+-- Tav: run in the selected project's SQL editor. Read-only; no token values.
 begin transaction read only;
 
 -- Whole database inventory, including provider-owned tables/views.

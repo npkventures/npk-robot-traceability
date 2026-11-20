@@ -1,0 +1,17 @@
+import type { Metadata } from 'next';
+import { MarketingShell, PageIntro } from '../marketing-shell';
+
+export const metadata: Metadata = { title: 'Chrome extension — Tav', description: 'Bring reviewed website references and component versions into Tav. Download the local Chrome extension and keep context beside your robot tests.', alternates: { canonical: '/extensions/' } };
+
+export default function ExtensionsPage() {
+  return <MarketingShell active="Chrome extension">
+    <PageIntro number="05" label="CHROME EXTENSION" title="Bring the reference with you." text="One extension for the websites you already use. Record a reviewed component version and its page reference, then bring it into your robot’s history." />
+    <div className="m-wrap m-content">
+      <a className="m-button" href="/downloads/tav-chrome-extension.zip" download>Download Chrome extension ↗</a>
+      <p className="m-small">Version 0.1.0 · Local installation · Not published in the Chrome Web Store</p>
+      <section className="m-split"><div><h2>From a browser tab<br />to a test record.</h2><p>Open an ordinary HTTP or HTTPS website and click Tav. Review the page label and reference, enter a component and its version, and download the approved capture. No website-specific integration is needed.</p><p>In your Tav workspace, select a robot and choose <strong>Import Chrome capture</strong>. Review the metadata and add the snapshot. It fills a test draft; you supply the actual test result.</p><p>Reuse a stable field ID and the same labels in later captures to compare versions. The extension records what you report; it does not independently verify a revision, physical hardware or a failure’s cause.</p></div>
+        <div><h2>Install and pin Tav.</h2><ol className="m-extension-steps"><li>Download the ZIP and extract it to a folder you will keep.</li><li>Open <code>chrome://extensions</code> in Chrome.</li><li>Turn on <strong>Developer mode</strong>, choose <strong>Load unpacked</strong>, and select the extracted folder containing <code>manifest.json</code>.</li><li>Open Chrome’s Extensions menu and pin <strong>Tav — Browser capture</strong>.</li><li>Visit a website, click Tav, and make your first reviewed capture.</li></ol><p>After an update, replace the extracted files and click Reload on the extension card. Managed browsers may require administrator approval.</p></div></section>
+      <section className="m-split"><div><h2>You choose what leaves the tab.</h2><p>The extension reads the active tab’s URL and title when you open it. It removes URL query parameters, fragments and credentials before review. Review the remaining path and label too: they can contain private information.</p><p>Only the metadata you approve is downloaded. It does not read page bodies, form inputs, cookies, browsing history or raw files, and makes no network upload. Closing the popup discards its draft.</p></div><div><h2>Know the boundaries.</h2><p>Chrome settings, extension pages, the Chrome Web Store and local file URLs are not supported. The extension does not parse CAD, scrape arbitrary page content or automatically discover revision fields.</p><p>Keep downloaded captures outside the project repository. Local workspace records require JSON export; private-beta drafts require Save to organization. Existing organization permissions and customer-hosting gates still apply.</p><p>To remove Tav, choose Remove on its card at <code>chrome://extensions</code>. Previously downloaded captures remain under your control.</p></div></section>
+    </div>
+  </MarketingShell>;
+}

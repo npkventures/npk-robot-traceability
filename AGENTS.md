@@ -1,5 +1,9 @@
 # Repository instructions
 
+## Frontend design workspace
+
+Founder direction, 2026-11-18: make frontend changes directly in the application. Paper is no longer required; do not block requested edits on Paper access or ask for a Paper exception. Inspect the current code, implement the requested scope, and verify the running application. Preserve functionality, responsive behavior, accessibility and evidence semantics. This supersedes the November 16 Paper-first direction. [docs/paper-frontend.md](docs/paper-frontend.md) is an archive of the incomplete import, not an active prerequisite.
+
 ## Mandatory context before implementation
 
 Before planning or editing application code, schema, infrastructure, UI, integrations, or product copy, complete the following read-only preflight. Do not run builds, scaffolding, generators, dependency installs, migrations, or file-changing commands until the context has been read and the plan presented:
@@ -49,9 +53,11 @@ Update `docs/build-progress.md` after every task with scope, delivered files/beh
 
 Final responses state what changed, what was checked, and material remaining limitations. Never claim these instructions technically prevent all future agents from skipping context: they are a required repository workflow, not an execution lock.
 
+When an active goal's full completion audit passes, call the goal tool to mark it complete, deliver the final result, and stop. Do not start another goal or continue optional work after completion without a new user request. The repository's [goal completion hook](docs/codex-goal-stop.md) observes successful goal-tool responses; it does not replace the audit or determine whether the backend is clean.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 

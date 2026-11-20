@@ -13,6 +13,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import unify_collector as collector
+from http_response import read_json_response
 
 MAX_QUEUE_FILES = 1000
 MAX_QUEUE_BYTES = 256 * 1024 * 1024
@@ -127,9 +128,7 @@ def flush_locked(directory, endpoint, token, attempts, opener, sleep, jitter):
             request = urllib.request.Request(endpoint, data=body, headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}, method='POST')
             try:
                 with opener.open(request, timeout=15) as response:
-                    if response.status != 200:
-                        raise ValueError('Unconfirmed upload; queue retained.')
-                    result = json.loads(response.read(4096))
+                    result = read_json_response(response, 4096)
                     if not isinstance(result, dict) or type(result.get('version')) is not int or result['version'] < 1 or not isinstance(result.get('duplicate'), bool):
                         raise ValueError('Unconfirmed upload; queue retained.')
                 path.unlink()  # Only the acknowledged queue copy; retain the original capture.

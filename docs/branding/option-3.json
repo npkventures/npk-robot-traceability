@@ -1,0 +1,10 @@
+{
+  "name": "Option 3 - open hexagon",
+  "component": "function TavWordmark() {\n return <span className=\"m-brand\" aria-hidden=\"true\">\n  <svg className=\"m-monogram\" viewBox=\"0 0 40 40\" fill=\"none\" focusable=\"false\">\n   <path d=\"M15 5L5 11V29L15 35M25 5L35 11V29L25 35M13 20H27\" stroke=\"currentColor\" strokeWidth=\"3.5\" strokeLinecap=\"square\" strokeLinejoin=\"round\" />\n  </svg>\n  <span className=\"m-wordmark\">Tav</span>\n </span>;\n}",
+  "cssRules": [
+    ".m-brand{display:inline-flex;align-items:center;gap:.42em}",
+    ".m-monogram{display:block;width:1.15em;height:1.15em;flex:none}",
+    ".m-wordmark{display:block;font-family:Arial,Helvetica,sans-serif;font-size:1em;font-weight:600;line-height:1;letter-spacing:.075em;text-transform:uppercase;flex:none}"
+  ],
+  "favicon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" rx=\"14\" fill=\"#252620\"/><path d=\"M15 5L5 11V29L15 35M25 5L35 11V29L25 35M13 20H27\" transform=\"translate(8 8) scale(1.2)\" fill=\"none\" stroke=\"#f4f1e9\" stroke-width=\"3.5\" stroke-linecap=\"square\" stroke-linejoin=\"round\"/></svg>\n"
+}

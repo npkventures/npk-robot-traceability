@@ -1,4 +1,4 @@
-"""Tavrik read-only gateway: bounded observations, reviewed B6 event handoff."""
+"""Tav read-only gateway: bounded observations, reviewed B6 event handoff."""
 import argparse
 import copy
 from datetime import datetime, timezone

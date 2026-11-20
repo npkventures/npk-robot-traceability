@@ -1,0 +1,10 @@
+{
+  "name": "Option 1 - linked frames",
+  "component": "function TavWordmark() {\n return <span className=\"m-brand\" aria-hidden=\"true\">\n  <svg className=\"m-monogram\" viewBox=\"0 0 40 40\" fill=\"none\" focusable=\"false\">\n   <rect x=\"4\" y=\"4\" width=\"22\" height=\"22\" rx=\"4\" stroke=\"currentColor\" strokeWidth=\"3\" />\n   <rect x=\"14\" y=\"14\" width=\"22\" height=\"22\" rx=\"4\" stroke=\"currentColor\" strokeWidth=\"3\" />\n  </svg>\n  <span className=\"m-wordmark\">Tav</span>\n </span>;\n}",
+  "cssRules": [
+    ".m-brand{display:inline-flex;align-items:center;gap:.34em}",
+    ".m-monogram{display:block;width:1.15em;height:1.15em;flex:none}",
+    ".m-wordmark{display:block;font-family:\"Helvetica Neue\",Helvetica,Arial,sans-serif;font-size:1.2em;font-weight:700;line-height:1;letter-spacing:-.055em;flex:none}"
+  ],
+  "favicon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" rx=\"14\" fill=\"#252620\"/><g fill=\"none\" stroke=\"#f4f1e9\" stroke-width=\"4\"><rect x=\"12\" y=\"12\" width=\"28\" height=\"28\" rx=\"5\"/><rect x=\"24\" y=\"24\" width=\"28\" height=\"28\" rx=\"5\"/></g></svg>\n"
+}

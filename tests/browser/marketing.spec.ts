@@ -1,6 +1,25 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 const routes=['/','/services/','/services/configuration-history/','/services/run-comparison/','/services/pilot/','/walkthrough/','/sectors/','/sectors/robotic-manipulation/','/about/','/contact/'];
+test('demo helper opens by keyboard and offers real destinations',async({page})=>{
+  await page.setViewportSize({width:320,height:700});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/');
+  const helper=page.locator('.t-helper');
+  const toggle=helper.locator('summary');
+  await toggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(helper).toHaveAttribute('open','');
+  await expect(helper.getByText('Demo & contact guide · Not a live chat')).toBeVisible();
+  await expect(helper.getByRole('link',{name:'Book a demo'})).toHaveAttribute('href','https://cal.com/npk-cnesstkcp/15min');
+  await expect(helper.getByRole('link',{name:'Explore the synthetic demo'})).toHaveAttribute('href','/demo/');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'test-results/demo-helper-320.png'});
+  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+  await toggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(helper).not.toHaveAttribute('open','');
+});
 for (const width of [320,768,1440]) test(`marketing routes, accessibility and layout at ${width}px`,async({page})=>{
   test.setTimeout(180000);
   await page.setViewportSize({width,height:900});
@@ -9,6 +28,7 @@ for (const width of [320,768,1440]) test(`marketing routes, accessibility and la
     await page.goto(route);
     await expect(page.getByRole('heading',{level:1})).toHaveCount(1);
     const nav=page.getByRole('navigation',{name:'Main navigation'});
+    await nav.getByRole('button',{name:'Menu',exact:true}).click();
     for(const name of ['Home','Services','Sectors','About']) await expect(nav.getByRole('link',{name,exact:true})).toBeVisible();
     await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -19,6 +39,7 @@ for (const width of [320,768,1440]) test(`marketing routes, accessibility and la
 });
 test('navigation, history, motion and deep links',async({page})=>{
   await page.goto('/');
+  await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Menu',exact:true}).click();
   await page.getByRole('navigation').getByRole('link',{name:'Services',exact:true}).click();
   await expect(page).toHaveURL(/\/services\/$/);
   await page.getByRole('link',{name:/02 Run comparison/}).click();
@@ -36,7 +57,7 @@ test('navigation, history, motion and deep links',async({page})=>{
   await page.evaluate(()=>scrollTo(0,650));
   await expect.poll(()=>page.locator('.marketing').evaluate(el=>el.style.getPropertyValue('--drift'))).not.toBe('0px');
   await page.emulateMedia({reducedMotion:'reduce'});
-  await expect(page.locator('.m-sculpture')).toHaveCSS('transform','none');
+  await expect(page.locator('.t-window')).toHaveCSS('transform','none');
   await expect(page.locator('.reveal-pending')).toHaveCount(0);
 });
 test('marketing content remains accessible without JavaScript',async({browser})=>{
@@ -45,6 +66,7 @@ test('marketing content remains accessible without JavaScript',async({browser})=
   await page.goto('http://127.0.0.1:3000/');
   await expect(page.getByRole('heading',{level:1})).toBeVisible();
   await expect(page.locator('main > section')).toHaveCount(5);
+  for (const content of await page.locator('[data-animated-content]').all()) await expect(content).toHaveCSS('visibility','visible');
   for (const section of await page.locator('main > section').all()) await expect(section).toHaveCSS('opacity','1');
   await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'About',exact:true}).click();
   await expect(page.getByRole('link',{name:/Email the founders/})).toHaveAttribute('href',/^mailto:/);
@@ -55,10 +77,11 @@ test('mobile motion stays still and navigation works by keyboard',async({page})=
   await page.setViewportSize({width:390,height:844});
   await page.goto('/');
   await page.evaluate(()=>scrollTo(0,700));
-  await expect(page.locator('.m-sculpture')).toHaveCSS('transform','none');
+  await expect(page.locator('.t-window')).toHaveCSS('transform','none');
   await page.emulateMedia({reducedMotion:'reduce'});
   await expect.poll(()=>page.evaluate(()=>document.getAnimations().filter(animation=>animation.playState==='running').length),{timeout:1000}).toBe(0);
   for (const [name,path] of [['Services','/services/'],['Sectors','/sectors/'],['About','/about/'],['Home','/']]) {
+    await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Menu',exact:true}).click();
     const link=page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name,exact:true});
     await link.focus();
     await expect(link).toBeFocused();
@@ -67,3 +90,25 @@ test('mobile motion stays still and navigation works by keyboard',async({page})=
   }
   await expect(page.getByRole('link',{name:'Explore the working demo',exact:false})).toHaveAttribute('href','/demo/');
 });
+
+ test('AnimatedContent settles and resets when reduced motion changes',async({page})=>{
+ await page.goto('/');
+ const steps=page.locator('.t-offerings');
+ await steps.scrollIntoViewIfNeeded();
+ for(const card of [steps]) {
+  await expect(card).toHaveCSS('opacity','1');
+  await expect(card).toHaveCSS('transform','none');
+ }
+ await page.emulateMedia({reducedMotion:'reduce'});
+ for(const content of await page.locator('[data-animated-content]').all()) {
+  await expect(content).toHaveCSS('visibility','visible');
+  await expect(content).toHaveCSS('transform','none');
+ }
+ await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Menu',exact:true}).click();
+  await page.getByRole('navigation').getByRole('link',{name:'About',exact:true}).click();
+ await expect(page).toHaveURL(/\/about\/$/);
+ await page.goBack();
+ await expect(page).toHaveURL('http://127.0.0.1:3000/');
+ await expect(page.locator('[data-animated-content]')).toHaveCount(5);
+ for(const content of await page.locator('[data-animated-content]').all()) await expect(content).toHaveCSS('visibility','visible');
+ });

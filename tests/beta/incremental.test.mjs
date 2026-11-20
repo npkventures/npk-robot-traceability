@@ -4,6 +4,9 @@ import { readFile, readdir } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { createHash } from 'node:crypto';
 import { demoRecords } from '../../lib/demo/fixtures.ts';
+import { researchExample } from '../../lib/local/research-example.ts';
+import { investigationComparison } from '../../lib/local/investigations.ts';
+import { investigationAnalysis } from '../../lib/local/investigation-analysis.ts';
 const org='00000000-0000-4000-8000-000000000001',owner='10000000-0000-4000-8000-000000000001',viewer='10000000-0000-4000-8000-000000000002';
 const fixture=()=>structuredClone({format:'unify-local',version:1,synthetic:true,records:demoRecords,corrections:[]});
 async function setup(){
@@ -23,6 +26,24 @@ async function setup(){
 }
 const rpc=(db,name,actor,data)=>db.query(`select ${name}($1,$2,$3::jsonb) as result`,[org,actor,JSON.stringify(data)]).then(r=>r.rows[0].result);
 const append=(db,bundle,key,actor=owner)=>rpc(db,'append_records',actor,{bundle,request_id:key,body_hash:createHash('sha256').update(JSON.stringify(bundle)).digest('hex')});
+
+test('public robot example survives database append, retry and history retrieval with original feedback',async()=>{
+ const db=await setup();try{
+  await db.query('select cutover_history($1,$2)',[org,owner]);
+  const bundle=researchExample();
+  await append(db,bundle,'flowsteps');
+  assert.equal((await append(db,bundle,'flowsteps')).duplicate,true);
+  await assert.rejects(append(db,bundle,'viewer-attempt',viewer),/forbidden/);
+  const restored=structuredClone(bundle);
+  for(const collection of ['robots','snapshots','runs']){
+   const page=await rpc(db,'history_page',viewer,{collection,limit:100});
+   restored.records[collection]=page.rows.map(row=>row.payload);
+  }
+  const expected=investigationAnalysis(investigationComparison(bundle.records,'flowsteps-3969-success','flowsteps-3968-failure'));
+  assert.deepEqual(investigationAnalysis(investigationComparison(restored.records,'flowsteps-3969-success','flowsteps-3968-failure')),expected);
+  assert.deepEqual(restored.records.runs.map(r=>r.outcome).sort(),['failure','success']);
+ }finally{await db.close();}
+});
 test('incremental migration, immutable legacy checkpoint, atomic retries, pagination and revocation',async()=>{
  const db=await setup();try{
  const b=fixture();

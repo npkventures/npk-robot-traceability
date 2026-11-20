@@ -7,11 +7,11 @@ test('sample compare, correction, export, clear and reimport preserve exact hist
   page.on('request', r => { if (r.method() !== 'GET' && !r.url().includes('__nextjs')) sent.push(r.url()); });
   await page.goto('/local/');
   await page.getByRole('button', { name:'Load synthetic example' }).click();
-  await page.getByRole('combobox', { name:'Target run', exact:true }).selectOption('run-043');
-  await page.getByRole('combobox', { name:'Successful baseline', exact:true }).selectOption('run-042');
+  await page.getByRole('combobox', { name:'Test to check', exact:true }).selectOption('run-043');
+  await page.getByRole('combobox', { name:'Compare with a successful test', exact:true }).selectOption('run-042');
   await expect(page.getByText('6 recorded changes', { exact:true })).toBeVisible();
   await page.getByRole('button', { name:'History', exact:true }).click();
-  await page.getByRole('combobox', { name:'Inspect snapshot revision', exact:true }).selectOption('snap-043:1');
+  await page.getByRole('combobox', { name:'Saved setup version', exact:true }).selectOption('snap-043:1');
   await page.getByText('Correct a recorded field', { exact:true }).click();
   const form = page.getByRole('form', { name:'Correct a field' });
   await form.getByRole('combobox', { name:'Field to correct', exact:true }).selectOption('calibration');
@@ -21,9 +21,10 @@ test('sample compare, correction, export, clear and reimport preserve exact hist
   await form.getByRole('button', { name:'Append correction' }).click();
   await expect(page.getByRole('status')).toContainText('Correction appended');
   await page.getByRole('button', { name:'Compare', exact:true }).click();
-  await expect(page.getByText('Exact reference: snap-043 · revision 1', { exact:false })).toBeVisible();
+  if (!(await page.locator('details.local-run').getAttribute('open') !== null)) await page.locator('details.local-run > summary').click();
+  await expect(page.getByText('Saved setup: snap-043 · revision 1', { exact:false })).toBeVisible();
   await page.getByRole('button', { name:'History', exact:true }).click();
-  await expect(page.getByRole('combobox', { name:'Inspect snapshot revision', exact:true })).toHaveValue('snap-043:2');
+  await expect(page.getByRole('combobox', { name:'Saved setup version', exact:true })).toHaveValue('snap-043:2');
   const pending = page.waitForEvent('download');
   await page.getByRole('button', { name:'Export JSON', exact:true }).click();
   const download = await pending, path = await download.path();
@@ -38,22 +39,21 @@ test('sample compare, correction, export, clear and reimport preserve exact hist
   await expect(page.getByRole('main').getByRole('alert')).toContainText('invalid JSON');
   await expect(page.getByRole('main').getByRole('alert')).toContainText('Current records were retained');
   await page.getByRole('button', { name:'History', exact:true }).click();
-  await page.getByRole('combobox', { name:'Inspect snapshot revision', exact:true }).selectOption('snap-043:2');
+  await page.getByRole('combobox', { name:'Saved setup version', exact:true }).selectOption('snap-043:2');
   await expect(page.getByText('Correct transcription', { exact:true })).toBeVisible();
   const oldHardware = bundle.records.snapshots.find((s: {id:string}) => s.id === 'snap-042');
   oldHardware.hardwareConfirmedAt = '2026-08-29T09:00:00Z';
   oldHardware.provenance.hardware.observedAt = oldHardware.hardwareConfirmedAt;
   await page.getByLabel('Import JSON').setInputFiles({ name:'stale-synthetic.json', mimeType:'application/json', buffer:Buffer.from(JSON.stringify(bundle)) });
-  await page.getByRole('combobox', { name:'Target run', exact:true }).selectOption('run-043');
-  await page.getByRole('combobox', { name:'Successful baseline', exact:true }).selectOption('run-042');
-  await expect(page.getByText('Stale baseline hardware report:', { exact:false })).toBeVisible();
+  await page.getByRole('combobox', { name:'Test to check', exact:true }).selectOption('run-043');
+  await page.getByRole('combobox', { name:'Compare with a successful test', exact:true }).selectOption('run-042');
+  await expect(page.getByText('The successful test’s hardware report was over 24 hours old.', { exact:false })).toBeVisible();
   expect(await page.evaluate(() => ({ local:localStorage.length, session:sessionStorage.length }))).toEqual({ local:0, session:0 });
   expect(sent).toEqual([]);
 });
 
 test('empty workspace can record hardware and a test with useful validation errors', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('link', { name:'Open workspace', exact:true }).click();
+  await page.goto('/workspace/');
   await expect(page).toHaveURL(/\/workspace\/$/);
   const robot = page.getByRole('form', { name:'Add a robot' });
   await robot.getByLabel('Robot ID', { exact:false }).fill('arm-1');
@@ -82,10 +82,12 @@ test('empty workspace can record hardware and a test with useful validation erro
   await run.getByLabel('Attempted picks').fill('10');
   await run.getByRole('combobox', { name:'Outcome', exact:true }).selectOption('success');
   await run.getByRole('button', { name:'Record run', exact:true }).click();
-  await expect(page.getByText('Exact reference: setup-1 · revision 1', { exact:false })).toBeVisible();
+  if (!(await page.locator('details.local-run').getAttribute('open') !== null)) await page.locator('details.local-run > summary').click();
+  await expect(page.getByText('Saved setup: setup-1 · revision 1', { exact:false })).toBeVisible();
   page.once('dialog', dialog => dialog.dismiss());
   await page.getByRole('button', { name:'Clear workspace' }).click();
-  await expect(page.getByText('Exact reference: setup-1 · revision 1', { exact:false })).toBeVisible();
+  if (!(await page.locator('details.local-run').getAttribute('open') !== null)) await page.locator('details.local-run > summary').click();
+  await expect(page.getByText('Saved setup: setup-1 · revision 1', { exact:false })).toBeVisible();
   const pending = page.waitForEvent('download');
   await page.getByRole('button', { name:'Export JSON', exact:true }).click();
   const saved = await pending;
@@ -93,13 +95,13 @@ test('empty workspace can record hardware and a test with useful validation erro
   expect(JSON.parse(exported).synthetic).toBe(false);
   await page.getByRole('button', { name:'Clear workspace' }).click();
   await page.getByLabel('Import JSON').setInputFiles({ name:'test-records.json', mimeType:'application/json', buffer:Buffer.from(exported) });
-  await page.getByRole('combobox', { name:'Target run', exact:true }).selectOption('run-1');
-  await expect(page.getByText('Exact reference: setup-1 · revision 1', { exact:false })).toBeVisible();
+  await page.getByRole('combobox', { name:'Test to check', exact:true }).selectOption('run-1');
+  if (!(await page.locator('details.local-run').getAttribute('open') !== null)) await page.locator('details.local-run > summary').click();
+  await expect(page.getByText('Saved setup: setup-1 · revision 1', { exact:false })).toBeVisible();
 });
 
-test('sample viewer exposes robot creation and workspace can add a second robot', async ({ page }) => {
-  await page.goto('/demo/');
-  await page.getByRole('link', { name:'Add your robot', exact:true }).click();
+test('local workspace can add a second robot', async ({ page }) => {
+  await page.goto('/workspace/');
   await expect(page).toHaveURL(/\/workspace\/$/);
   const form = page.getByRole('form', { name:'Add a robot' });
   for (const id of ['arm-a', 'arm-b']) {
@@ -137,9 +139,9 @@ for (const width of [320, 768, 1440]) test(`workspace accessibility and layout a
   expect((await new AxeBuilder({ page }).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
   await page.screenshot({ path:`test-results/create-robot-${width}.png`, fullPage:true });
   await page.getByRole('button', { name:'Load synthetic example' }).click();
-  await page.getByRole('combobox', { name:'Target run', exact:true }).selectOption('run-045');
-  await page.getByRole('combobox', { name:'Successful baseline', exact:true }).selectOption('run-042');
-  await expect(page.getByText('Comparability is limited', { exact:true })).toBeVisible();
+  await page.getByRole('combobox', { name:'Test to check', exact:true }).selectOption('run-045');
+  await page.getByRole('combobox', { name:'Compare with a successful test', exact:true }).selectOption('run-042');
+  await expect(page.getByText('These tests may not be a fair comparison', { exact:true })).toBeVisible();
   for (const view of ['Record', 'History', 'Compare']) {
     await page.getByRole('button', { name:view, exact:true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -151,13 +153,13 @@ for (const width of [320, 768, 1440]) test(`workspace accessibility and layout a
 test('switching views keeps draft fields and comparison selections', async ({ page }) => {
   await page.goto('/local/');
   await page.getByRole('button', { name:'Load synthetic example' }).click();
-  await page.getByRole('combobox', { name:'Target run', exact:true }).selectOption('run-043');
-  await page.getByRole('combobox', { name:'Successful baseline', exact:true }).selectOption('run-042');
+  await page.getByRole('combobox', { name:'Test to check', exact:true }).selectOption('run-043');
+  await page.getByRole('combobox', { name:'Compare with a successful test', exact:true }).selectOption('run-042');
   const record = page.getByRole('button', { name:'Record', exact:true });
   await record.focus();
   await page.keyboard.press('Enter');
   await expect(record).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('heading', { name:'What changed between runs?' })).toBeHidden();
+  await expect(page.getByRole('heading', { name:'Compare tests' })).toBeHidden();
   await page.getByText('Record a hardware change / initial setup', { exact:true }).click();
   const hardware = page.getByRole('form', { name:'Record hardware', exact:true });
   await hardware.getByLabel('New snapshot ID', { exact:false }).fill('draft-setup');
@@ -170,6 +172,6 @@ test('switching views keeps draft fields and comparison selections', async ({ pa
   await page.getByRole('button', { name:'History', exact:true }).click();
   await page.getByRole('button', { name:/Robot 03/ }).click();
   await expect(page.getByRole('button', { name:'Compare', exact:true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByText('No runs for this robot.', { exact:false })).toBeVisible();
+  await expect(page.getByText('No tests yet.', { exact:false })).toBeVisible();
   await expect(page.getByRole('button', { name:'History', exact:true })).toBeDisabled();
 });

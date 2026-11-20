@@ -13,7 +13,7 @@ export function registryInput(raw:unknown,org:string){
  }
  if(v.action==='review'){
   exactReport(v,['action','id','expected_revision','state','reason','published','public_label','public_reason']);
-  if(!Number.isSafeInteger(v.expected_revision)||Number(v.expected_revision)<1||!['collecting_data','insufficient_labels','evaluating','paused','degraded'].includes(String(v.state))||typeof v.published!=='boolean')throw Error('Invalid unavailable candidate transition.');
+  if(!Number.isSafeInteger(v.expected_revision)||Number(v.expected_revision)<1||typeof v.state!=='string'||!['collecting_data','insufficient_labels','evaluating','paused','degraded'].includes(v.state)||typeof v.published!=='boolean')throw Error('Invalid unavailable candidate transition.');
   return {action:'review',id:machineId(v.id),expected_revision:v.expected_revision,state:v.state,reason:reportText(v.reason),published:v.published,
    public_label:v.published?reportText(v.public_label,120):null,public_reason:v.published?reportText(v.public_reason):null};
  }

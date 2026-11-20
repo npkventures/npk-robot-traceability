@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {mkdtempSync,writeFileSync,readFileSync,readdirSync,unlinkSync,rmdirSync,mkdirSync} from 'node:fs';
+import {mkdtempSync,writeFileSync,readFileSync,readdirSync,unlinkSync,rmdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -36,6 +36,18 @@ test('baseline metrics preserve exact references and cannot activate models; ris
  assert.equal(evaluateBaseline({...d,rows:[]}).state,'collecting_data');
  assert.equal(predictionReadiness().capabilities.every(c=>!c.available&&c.eligible_runs===null),true);assert.equal(readinessStates.includes('degraded'),true);
 });
+test('transitive job and duplicate links purge the entire boundary-spanning group with reasons',()=>{
+ const d=dataset();
+ d.rows[1].job_id=d.rows[0].job_id;
+ d.rows[2].duplicate_group=d.rows[1].duplicate_group;
+ const result=evaluateBaseline(d);
+ assert.equal(result.training_attempts.length,0);assert.equal(result.test_attempts.length,1);
+ assert.equal(result.diagnostics.exclusions.length,3);
+ assert.ok(result.diagnostics.exclusions.every(e=>e.reasons.includes('linked_group_crosses_cutoff')));
+ assert.equal(result.available,false);assert.equal(result.model,null);
+ const missing=dataset();missing.rows[0].label=null;missing.rows[0].label_available_at=null;missing.rows[0].censored=true;
+ assert.deepEqual(evaluateBaseline(missing).diagnostics.exclusions[0].reasons,['censored','missing_label']);
+});
 test('readiness API requires current project access and does not expose private cohort records',async()=>{
  Object.assign(process.env,{BETA_ENABLED:'true',BETA_AUTH_LIFECYCLE:'false',BETA_ORIGIN:'https://beta.example.invalid',SUPABASE_URL:'https://db.example.invalid',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'server'});
  const org=randomUUID(),project=randomUUID();let allowed=true;
@@ -44,12 +56,12 @@ test('readiness API requires current project access and does not expose private 
  const r=await handle(request());assert.equal(r.status,200);assert.deepEqual(await r.json(),predictionReadiness());allowed=false;assert.equal((await handle(request())).status,403);
 });
 test('offline CLI preserves private artifacts, rejects repository paths including dot-prefixed directories',()=>{
- const directory=mkdtempSync(join(tmpdir(),'tavrik-evaluation-test-')),input=join(directory,'input.json'),local=resolve('.cache/..prediction-test-'+randomUUID());
+ const directory=mkdtempSync(join(tmpdir(),'tavrik-evaluation-test-')),input=join(directory,'input.json'),local=mkdtempSync(resolve('..prediction-test-'));
  try{
   writeFileSync(input,JSON.stringify(dataset()));
   const output=execFileSync(process.execPath,['--experimental-strip-types','scripts/evaluate-predictions.mjs',input,directory,'synthetic-test-reviewer'],{encoding:'utf8',windowsHide:true});
   assert.equal(JSON.parse(output).available,false);
   const file=readdirSync(directory).find(f=>f.startsWith('evaluation-'));const artifact=JSON.parse(readFileSync(join(directory,file),'utf8'));assert.equal(artifact.dataset.cohort.reality,'simulation');assert.equal(artifact.registry.state,artifact.evaluation.state);
-  mkdirSync(local);assert.throws(()=>execFileSync(process.execPath,['--experimental-strip-types','scripts/evaluate-predictions.mjs',input,local,'test'],{stdio:'pipe',windowsHide:true}));
+  assert.throws(()=>execFileSync(process.execPath,['--experimental-strip-types','scripts/evaluate-predictions.mjs',input,local,'test'],{stdio:'pipe',windowsHide:true}));
  }finally{for(const file of readdirSync(directory))unlinkSync(join(directory,file));rmdirSync(directory);try{rmdirSync(local);}catch{}}
 });

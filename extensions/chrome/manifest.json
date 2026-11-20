@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Tav — Browser capture",
+  "version": "0.1.0",
+  "description": "Bring reviewed page references and component versions from websites into Tav robot history.",
+  "permissions": ["activeTab", "downloads"],
+  "action": {
+    "default_title": "Capture a reference with Tav",
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'"
+  }
+}

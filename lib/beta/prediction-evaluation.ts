@@ -43,12 +43,26 @@ export function curateDataset(raw:unknown){
 }
 export function evaluateBaseline(raw:unknown){
  const dataset=curateDataset(raw),{rows,target,split_at}=dataset;
- const groupSides=new Map<string,Set<boolean>>();
- for(const r of rows)for(const key of ['job:'+r.job_id,'duplicate:'+r.duplicate_group]){const sides=groupSides.get(key)??new Set();sides.add(r.decision_at<split_at);groupSides.set(key,sides);}
- const eligible=rows.filter(r=>!r.censored&&r.label!==null&&groupSides.get('job:'+r.job_id)!.size===1&&groupSides.get('duplicate:'+r.duplicate_group)!.size===1);
- const train=eligible.filter(r=>r.decision_at<split_at&&r.label_available_at!<split_at),test=eligible.filter(r=>r.decision_at>=split_at);
- const manifest={dataset_hash:dataset.dataset_hash,org_id:dataset.org_id,project_id:dataset.project_id,cohort:dataset.cohort,target,feature_version:dataset.feature_version,label_version:dataset.label_version,algorithm_version:'constant-baseline-v1',evaluated_at:dataset.evaluated_at,split_at,training_attempts:train.map(r=>r.attempt_id),test_attempts:test.map(r=>r.attempt_id),excluded:rows.length-train.length-test.length};
- const unavailable=(state:string,reason:string)=>({...manifest,state,available:false,reason,model:null,metrics:null,registry_status:'candidate',predictions:[]});
+ // Purge whole connected components: a repeated job can bridge duplicate groups.
+ const parent=rows.map((_,i)=>i), owners=new Map<string,number>();
+ const root=(index:number):number=>{let i=index;while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i];}return i;};
+ rows.forEach((r,i)=>{for(const key of ['job:'+r.job_id,'duplicate:'+r.duplicate_group]){const prior=owners.get(key);if(prior===undefined)owners.set(key,i);else parent[root(i)]=root(prior);}});
+ const sides=new Map<number,Set<boolean>>();
+ rows.forEach((r,i)=>{const group=root(i),values=sides.get(group)??new Set<boolean>();values.add(r.decision_at<split_at);sides.set(group,values);});
+ const exclusions=rows.flatMap((r,i)=>{
+  const reasons:string[]=[];
+  if(sides.get(root(i))!.size>1)reasons.push('linked_group_crosses_cutoff');
+  if(r.censored)reasons.push('censored');
+  if(r.label===null)reasons.push('missing_label');
+  if(r.decision_at<split_at&&r.label_available_at!==null&&r.label_available_at>=split_at)reasons.push('label_unavailable_at_training_cutoff');
+  return reasons.length?[{attempt_id:r.attempt_id,reasons}]:[];
+ });
+ const excludedIds=new Set(exclusions.map(e=>e.attempt_id));
+ const eligible=rows.filter(r=>!excludedIds.has(r.attempt_id));
+ const train=eligible.filter(r=>r.decision_at<split_at),test=eligible.filter(r=>r.decision_at>=split_at);
+ const manifest={dataset_hash:dataset.dataset_hash,org_id:dataset.org_id,project_id:dataset.project_id,cohort:dataset.cohort,target,feature_version:dataset.feature_version,label_version:dataset.label_version,algorithm_version:'constant-baseline-v2',evaluated_at:dataset.evaluated_at,split_at,training_attempts:train.map(r=>r.attempt_id),test_attempts:test.map(r=>r.attempt_id),excluded:rows.length-train.length-test.length};
+ const diagnostics={exclusions,training_count:train.length,holdout_count:test.length,split_policy:'connected-job-duplicate-purge-v2'};
+ const unavailable=(state:string,reason:string)=>({...manifest,diagnostics,state,available:false,reason,model:null,metrics:null,registry_status:'candidate',predictions:[]});
  if(!rows.length)return unavailable('collecting_data','No curated rows.');
  if(target.capability==='maintenance')return unavailable('insufficient_labels','Maintenance requires an independently reviewed survival/censoring protocol, exposure and event times. This baseline does not estimate maintenance risk.');
  if(!train.length||!test.length)return unavailable('insufficient_labels','Need eligible earlier training labels and later unseen jobs; boundary-spanning job/duplicate groups are excluded.');
@@ -62,7 +76,7 @@ export function evaluateBaseline(raw:unknown){
  if(risk){const positives=actual.filter(x=>x===1).length,predictedPositive=value>=.5;metrics={brier:actual.reduce((s,y)=>s+(value-y)**2,0)/actual.length,calibration:{predicted:value,observed:positives/actual.length,count:actual.length},threshold:.5,precision:predictedPositive?positives/actual.length:null,recall:predictedPositive?1:0,average_precision:positives/actual.length};}
  else metrics={mae:actual.reduce((s,y)=>s+Math.abs(value-y),0)/actual.length,rmse:Math.sqrt(actual.reduce((s,y)=>s+(value-y)**2,0)/actual.length),interval_coverage:actual.filter(y=>y>=interval![0]&&y<=interval![1]).length/actual.length,interval_width:interval![1]-interval![0]};
  const model_version=digest({manifest,model}),predictions=test.map(r=>({attempt_id:r.attempt_id,snapshot:r.snapshot,decision_at:r.decision_at,model_version,value,interval,mode:'offline_evaluation',realized:r.label,applicability:dataset.cohort,uncertainty:model.uncertainty}));
- return {...manifest,state:'evaluating',available:false,reason:'Offline baseline only. No acceptance review, real-world validation or serving activation is implied.',model:{...model,model_version},metrics,registry_status:'candidate',predictions};
+ return {...manifest,diagnostics,state:'evaluating',available:false,reason:'Offline baseline only. No acceptance review, real-world validation or serving activation is implied.',model:{...model,model_version},metrics,registry_status:'candidate',predictions};
 }
 // A paused/degraded candidate never produces a live recommendation; activation is intentionally absent.
 export function registryEntry(evaluation:ReturnType<typeof evaluateBaseline>,state:string,actor:string,reason:string,priorHash:string|null=null){
