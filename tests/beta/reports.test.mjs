@@ -8,11 +8,22 @@ import {buildReport,reportSelection,validatePublishedReport} from '../../lib/bet
 import {publicIPv4,webhookURL,resolveWebhook,signature,verifyReportWebhook,reportWorkerStep} from '../../lib/beta/report-delivery.ts';
 import {seal} from '../../lib/beta/connector-secrets.ts';
 import {createHandler} from '../../lib/beta/server.ts';
+import {reportRoute} from '../../lib/beta/report-routes.ts';
 const known=value=>({state:'known',value}),unknown={state:'unknown',reason:'Not measured'};
 const attempt={job_id:randomUUID(),attempt_id:randomUUID(),retry_of:null,robot_id:'robot-01',snapshot_id:'snapshot-01',snapshot_revision:1,source_identity:randomUUID(),procedure:known('pick'),procedure_version:known('1'),task:known('test'),environment:unknown,components:unknown,reality:'synthetic',method:'manual'};
 const event=(kind,payload,n)=>({event_id:randomUUID(),source_identity:attempt.source_identity,source_sequence:n,observed_at:'2026-11-01T10:00:00.000Z',received_at:'2026-11-01T10:01:00.000Z',archive_id:n+1,author:attempt.source_identity,kind,payload,correction_of:null,reason:null});
 const source={attempt,project_id:randomUUID(),created_at:'2026-11-01T10:00:00.000Z',events:[event('state',{state:'succeeded'},0),event('measurement',{name:'duration',state:'known',value:3,unit:'s',reason:null},1),event('label',{name:'internal_note',value:'private investigation',evidence:'https://secret.invalid/raw'},2)]};
 const selection=()=>({report_id:randomUUID(),project_id:source.project_id,expected_revision:0,period:{start:'2026-11-01T00:00:00.000Z',end:'2026-11-02T00:00:00.000Z'},attempt_ids:[attempt.attempt_id],metrics:['quality','duration'],conclusion:null,correction_reason:null});
+test('report administration rejects array actions without storage calls',async()=>{
+ let writes=0;const admin=async()=>{writes++;return {saved:true};};
+ for(const action of ['revoke_credential','revoke_endpoint','replay']){
+  const input={action:[action],id:randomUUID()};
+  await assert.rejects(reportRoute(admin,async()=>[],randomUUID(),randomUUID(),input));
+  assert.equal(writes,0);
+ }
+ for(const action of ['revoke_credential','revoke_endpoint','replay'])await reportRoute(admin,async()=>[],randomUUID(),randomUUID(),{action,id:randomUUID()});
+ assert.equal(writes,3);
+});
 test('reports expose selected measured facts, preserve unknowns and omit raw notes/links',()=>{
  const s=reportSelection(selection()),built=buildReport(s,[source]);
  assert.equal(built.content.runs[0].duration.value,3);assert.equal(built.content.runs[0].measurements[0].value,null);
@@ -23,6 +34,39 @@ test('reports expose selected measured facts, preserve unknowns and omit raw not
  assert.throws(()=>validatePublishedReport({...published,model_assessment:{state:'available',reason:'invented'}}));
  assert.throws(()=>buildReport({...s,project_id:randomUUID()},[source]));
  assert.throws(()=>reportSelection({...s,attempt_ids:[attempt.attempt_id,attempt.attempt_id]}));
+});
+test('malformed report enums never leave retrieval or webhook boundaries',async()=>{
+ Object.assign(process.env,{BETA_ENABLED:'true',BETA_REPORTS_ENABLED:'true',BETA_ORIGIN:'https://beta.example.invalid',SUPABASE_URL:'https://db.example.invalid',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'server',CONNECTOR_ACTIVE_KEY:'test',CONNECTOR_KEYS:JSON.stringify({test:'a'.repeat(64)})});
+ const selected=reportSelection(selection()),built=buildReport(selected,[source]);
+ const valid={...built.content,report_id:selected.report_id,project_id:selected.project_id,client_id:randomUUID(),revision:1,previous_revision:null,generated_at:new Date().toISOString()};
+ const org=randomUUID(),endpoint=randomUUID(),job={id:randomUUID(),lease:randomUUID()};
+ const secret=seal({active:'synthetic-signing-secret',previous:null,previous_until:0},'report:'+org+':'+endpoint);
+ const cases=[
+  ...['reality','method','outcome'].map(key=>report=>{report.runs[0][key]=[report.runs[0][key]];}),
+  report=>{report.runs[0].duration.state=['known'];report.runs[0].duration.value=null;},
+  ...['known','unknown','not-applicable'].map(state=>report=>{report.runs[0].measurements[0].state=[state];}),
+ ];
+ for(const mutate of cases){
+  const report=structuredClone(valid);mutate(report);
+  const handler=createHandler(async()=>Response.json({rows:[{payload:report}],next:null}));
+  const response=await handler(new Request(process.env.BETA_ORIGIN+'/api/v1/reports',{headers:{Authorization:'Bearer tr_'+'a'.repeat(64)}}));
+  assert.equal(response.status,500);
+  assert.doesNotMatch(await response.text(),new RegExp(report.report_id));
+  let sent=0,finished;
+  const command=async(action,data)=>{
+   if(action==='claim')return job;
+   if(action==='dispatch')return {report,event_id:randomUUID(),event_type:'report.published',secret,org_id:org,endpoint_id:endpoint,url:'https://receiver.example.invalid/reports'};
+   assert.equal(action,'finish');finished=data;
+  };
+  await reportWorkerStep(command,async()=>{sent++;return 204;});
+  assert.equal(sent,0);assert.deepEqual(finished,{...job,delivered:false,status_code:null});
+ }
+ // Unknown/null and actual unit-qualified observations remain valid.
+ assert.equal(validatePublishedReport(valid),valid);
+ for(const state of ['unknown','not-applicable']){
+  const report=structuredClone(valid);report.runs[0].measurements[0].state=state;
+  assert.equal(validatePublishedReport(report),report);
+ }
 });
 test('webhook URL and DNS restrictions deny private, link-local, numeric, rebinding and redirect-style targets',async()=>{
  process.env.REPORT_WEBHOOK_HOSTS='receiver.example.invalid';

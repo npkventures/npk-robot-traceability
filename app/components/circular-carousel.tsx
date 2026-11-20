@@ -43,7 +43,7 @@ export function CircularCarousel({ items }: { items: CarouselItem[] }) {
   };
   if (!count) return null;
   return <div className="t-offerings" data-ready={ready}>
-    <div className="t-carousel-interactive" role="region" aria-roledescription="carousel" aria-label="Tavrik capabilities">
+    <div className="t-carousel-interactive" role="region" aria-roledescription="carousel" aria-label="Tav capabilities">
       <div className="t-wheel" role="group" tabIndex={0} aria-label="Use left and right arrows to browse capabilities" onKeyDown={event => {
         if (event.key === 'ArrowRight') go(active + 1);
         else if (event.key === 'ArrowLeft') go(active - 1);

@@ -28,6 +28,8 @@ Current requester, approver, machine creator, grant issuer, credential and proje
 
 Expiry is at most one hour after request creation and applies to approval/start. After possible dispatch, deadline expiry becomes unknown, never stopped. Listing returns both stored and effective state; detail/dispatch calls append the deadline transition. There is no background expiry scheduler or live-status SLA.
 
+The additive [capacity-accounting repair](../supabase/migrations/20261109190000_command_capacity_fix.sql) excludes expired requests that never dispatched from the 1,000-unresolved-request limit, even before their lazy deadline transition is recorded. Possible dispatches and unknown outcomes still consume capacity after expiry. It preserves all request/event history and service-only permissions. This migration is locally verified but has not been applied to hosted Supabase; reconcile the target's migration history before deployment.
+
 `cancel` before dispatch rejects the pending request. After dispatch it records `cancel_requested_at` without claiming a stop. The built-in simulation checks that flag between its bounded steps and reports `completed`/`cancelled` with `stop_confirmed: true` only after it stops its own loop. This has no physical safety meaning. A disconnected gateway cannot confirm cancellation. Local controller safety, operator mode and authority would remain authoritative for any future physical adapter; there is no cloud emergency-stop guarantee.
 
 ## API operations
@@ -73,7 +75,7 @@ Before use, configure a private directory outside the repository with owner-only
 These booleans model local simulation checks; they are not live hardware observations or certified interlocks. The context is reloaded before acceptance/start and between steps; it must be no more than 30 seconds old, not future-dated, and match the exact requested configuration. An invalid or stale context denies execution.
 
 ```sh
-python collector/command_runner.py --journal /private/tavrik/commands --endpoint https://YOUR-BETA-HOST/api/v1/commands --command-id COMMAND_UUID --gateway-id GATEWAY_UUID --context /private/tavrik/simulation-context.json --reviewed-simulation
+python collector/command_runner.py --journal /private/tav/commands --endpoint https://YOUR-BETA-HOST/api/v1/commands --command-id COMMAND_UUID --gateway-id GATEWAY_UUID --context /private/tav/simulation-context.json --reviewed-simulation
 ```
 
 The runner serializes access with an OS lock and commits SQLite with `synchronous=FULL`. It commits a start latch before asking for start authorization and before simulated work. Restart after that latch reports unknown and never relaunches. Lost acceptance acknowledgement may be reconciled before the first start; lost completion acknowledgement retries the stored completion report. A missing journal for an already dispatched request also fails closed. Preserve the endpoint/identity binding and exact request bytes. Disk/permission errors stop the step. Windows tests do not establish Linux/power-loss durability.

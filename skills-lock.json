@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "skills": {
+    "superagent": {
+      "source": "superagent-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/superagent/SKILL.md",
+      "computedHash": "d0ac45a754a3ae8dcc7927f1ac87be1a9922eced57674ebbbc38fea38fcfad42"
+    }
+  }
+}

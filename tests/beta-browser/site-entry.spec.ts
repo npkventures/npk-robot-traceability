@@ -47,7 +47,7 @@ test('one origin: homepage, sign-in, explicit invitation acceptance, workspace a
   await expect.poll(() => acceptCalls).toBe(1);
   await page.getByRole('combobox', { name: 'Organization', exact: true }).selectOption(org);
   await expect(page.getByLabel('Robot ID', { exact: false })).toBeVisible();
-  await page.getByRole('link', { name: 'Tavrik home', exact: true }).click();
+  await page.getByRole('link', { name: 'Tav home', exact: true }).click();
   await page.getByRole('link', { name: 'Open workspace', exact: false }).click();
   await expect(page.getByRole('combobox', { name: 'Organization', exact: true })).toBeVisible({timeout:30000});
   await expect(page).toHaveURL(/\/app(?:\?org=[a-f0-9-]+)?$/);

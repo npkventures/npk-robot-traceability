@@ -1,6 +1,6 @@
 {
  "$schema":"https://json-schema.org/draft/2020-12/schema",
- "title":"Tavrik approved report v1",
+ "title":"Tav approved report v1",
  "type":"object","additionalProperties":false,
  "required":["schema_version","report_id","revision","previous_revision","project_id","client_id","generated_at","period","runs","engineer_conclusion","model_assessment","correction_reason"],
  "properties":{

@@ -23,7 +23,11 @@ export async function boundedHistory(page: PageReader, synthetic: boolean, water
     else if (collection === 'investigation_revisions') b.investigations = items as Bundle['investigations'];
     else (b[collection] as unknown[]) = items;
   }
-  return parseBundle(JSON.stringify(b));
+  // The local format must fit its formatted export as well as compact JSON.
+  // Valid incremental batches can accumulate past that bound before the estimate above.
+  const serialized = JSON.stringify(b, null, 2);
+  if (Buffer.byteLength(serialized) > MAX_BYTES) return null;
+  return parseBundle(serialized);
 }
 
 // Watermark fixes content; each page reauthorizes. EOF without complete=true is a failed export.

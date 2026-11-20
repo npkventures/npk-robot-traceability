@@ -1,6 +1,6 @@
 # Engineer metadata alongside existing tools
 
-Extends the local Stages 4–5 workflow in [build.md](../build.md), section 6. Engineers can record different components and measurements without changing Tavrik's fixed core fields. A robot file can supply arm torque, leg joint position, a controller setting, a component version or another approved scalar. Differences remain evidence for investigation, never automatic diagnoses.
+Extends the local Stages 4–5 workflow in [build.md](../build.md), section 6. Engineers can record different components and measurements without changing Tav's fixed core fields. A robot file can supply arm torque, leg joint position, a controller setting, a component version or another approved scalar. Differences remain evidence for investigation, never automatic diagnoses.
 
 ## First import
 
@@ -8,7 +8,7 @@ Extends the local Stages 4–5 workflow in [build.md](../build.md), section 6. E
 2. Expand **Import engineer metadata · JSON / CSV**, then choose an approved metadata export from the existing engineering tool. JSON must have an object at its root. CSV needs unique headers and consistent columns; select one data row per snapshot.
 3. Select fields to include. Review the component, field name, value type, units and purpose. Choose **Test condition** when a difference should warn that runs may not be comparable. Numbers require a unit; use `1` for dimensionless quantities. Text and booleans have no unit.
 4. Supply the engineer's name, source reference and actual observation time represented by the file. Inspect the approved snapshot preview, including unknowns. **Add approved snapshot** creates a new immutable revision-1 snapshot and saves its mapping in the workspace.
-5. **Record** opens automatically with that exact snapshot revision selected. Its components, measurements, part numbers and CAD revision references appear in the test draft with their units and missing-value states. Enter the run ID, actual test time and explicit outcome, then **Record run**. Picking counts are optional under **Optional picking counts**; supply both or neither. Tavrik never invents them or derives success from them.
+5. **Record** opens automatically with that exact snapshot revision selected. Its components, measurements, part numbers and CAD revision references appear in the test draft with their units and missing-value states. Enter the run ID, actual test time and explicit outcome, then **Record run**. Picking counts are optional under **Optional picking counts**; supply both or neither. Tav never invents them or derives success from them.
 6. Import a later file using the saved mapping. Its approved values populate the preview automatically; **Add approved snapshot** updates the test draft to the new exact snapshot. Saved tests retain their previous references. Record the new result and compare both runs. Custom fields appear alongside core fields, with units and provenance. **Export JSON** retains snapshots, mappings, runs and corrections.
 
 Illustrative synthetic JSON:
@@ -44,7 +44,7 @@ Keep the existing collector configuration version 1 and add:
 ```json
 "custom": {
   "source": "engineer-metadata.json",
-  "mapping": "tavrik-mapping.json",
+  "mapping": "tav-mapping.json",
   "observedAt": "2026-10-10T10:00:00Z"
 }
 ```

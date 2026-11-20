@@ -1,8 +1,10 @@
-# Tavrik robot configuration history
+# Tav robot configuration history
 
 **One-site customer access:** the `beta/` server now serves the homepage, `/login`, `/app`, `/demo`, and private APIs on one origin. Use `npm run dev` (or `npm run dev:beta`) at http://127.0.0.1:3002. The root static preview remains separate (`npm run dev:preview`). See [the product/access correction](docs/product-readiness-correction.md) for the current demo boundary, account journeys and missing billing implementation. See [single-site access and founder onboarding](docs/single-site-access.md) for invitation links, new-team provisioning and live prerequisites. Provider signup/email delivery require current configuration acceptance; this wiring is not a customer launch.
 
-Product name updated from UNIFY on October 29, 2026. Legacy `unify-*` file formats, collector module paths, `UNIFY_*` environment variables, authentication cookies, API headers and provider-operation markers remain stable for compatibility. Existing saved organization names and historical release records retain their original labels. The repository folder and configured external accounts/domains are unchanged.
+**Chrome extension:** capture reviewed website references and component versions, then import them into Tav. See [installation and usage](docs/chrome-extension.md), or open `/extensions/` in the app. Local unpacked installation is available; Chrome Web Store publication is not claimed.
+
+Product name updated from Tavrik to Tav on November 17, 2026 (previously UNIFY). Legacy `unify-*` and `tavrik-*` file formats, collector module paths, `UNIFY_*` and `TAVRIK_*` environment variables, authentication cookies, `X-Tavrik-*` webhook headers and provider-operation markers remain stable for compatibility. Existing saved organization names and historical release records retain their original labels. The repository folder and configured external accounts/domains are unchanged.
 
 Historical verification, October 20: [base prompts 1–10 audit and exact manual fixes](docs/base-prompts-audit-2026-10-20.md). Core software passed 131 automated tests, both builds and hosted synthetic checks. Email activation, public/private deployment operations, managed recovery and real customer evidence remain outstanding; this is not a completed launch.
 

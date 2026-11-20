@@ -3,6 +3,7 @@ import json
 import sys
 import unittest
 import urllib.error
+from unittest.mock import patch
 from pathlib import Path
 from datetime import datetime
 from uuid import uuid4
@@ -62,6 +63,28 @@ class EventTests(unittest.TestCase):
     def test_event_extra_fields_are_rejected(self):
         with self.assertRaises(ValueError):
             events.validate_event({**self.event, 'tenant': 'foreign'})
+
+    def test_oversized_receipt_does_not_remove_queued_evidence(self):
+        body = json.dumps(self.receipt()).encode().ljust(8192, b' ') + b'not-json'
+        with patch.object(Opener, 'open', return_value=support.Reply(body)):
+            with self.assertRaises(ValueError):
+                events.flush_events(self.event_queue, self.endpoint, self.machine_token, opener=Opener([]))
+        self.assertTrue((self.event_queue / (self.event_key + '.json')).exists())
+
+    def test_receipt_sequence_must_be_an_integer_not_a_boolean(self):
+        receipt = self.receipt(); receipt['source_sequence'] = True
+        with self.assertRaises(ValueError):
+            events.flush_events(self.event_queue, self.endpoint, self.machine_token, opener=Opener([receipt]))
+        self.assertTrue((self.event_queue / (self.event_key + '.json')).exists())
+
+    def test_truncated_http_receipt_retains_exact_event(self):
+        body = json.dumps(self.receipt()).encode()
+        response = support.http_reply(body, ('Content-Length: %d\r\n' % (len(body)+10)).encode())
+        original = (self.event_queue / (self.event_key + '.json')).read_bytes()
+        with patch.object(Opener, 'open', return_value=response):
+            with self.assertRaises(ValueError):
+                events.flush_events(self.event_queue, self.endpoint, self.machine_token, opener=Opener([]))
+        self.assertEqual((self.event_queue / (self.event_key + '.json')).read_bytes(), original)
 
     def test_lifecycle_reconnect_reconciles_exact_event_and_preserves_missing(self):
         unknown = {'state': 'unknown', 'reason': 'Not observed'}

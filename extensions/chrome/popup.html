@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tav · Browser capture</title><link rel="stylesheet" href="popup.css"></head>
+<body>
+  <header><strong>Tav ↗</strong><span>CHROME CAPTURE</span></header>
+  <main>
+    <h1>Keep the reference.</h1>
+    <p>Record a component version from the page you’re viewing. Review it, then import the capture into Tav.</p>
+    <p id="status" role="status">Reading this tab’s reference…</p>
+    <form id="capture-form">
+      <fieldset id="fields" disabled>
+        <legend>Review this capture</legend>
+        <label>Page reference<input id="url" type="url" required maxlength="512"></label>
+        <small>Query parameters and fragments are removed. Review the path and label for private information.</small>
+        <label>Page label<input id="title" required maxlength="120"></label>
+        <p>Page observed: <time id="observed"></time><br><small>This is the page observation time, not the time the component changed.</small></p>
+        <label>Component<input id="component" required maxlength="120" placeholder="Wrist camera"></label>
+        <label>Field name<input id="name" required maxlength="120" placeholder="Calibration revision"></label>
+        <label>Stable field ID<input id="field-id" required maxlength="80" pattern="[a-zA-Z0-9][a-zA-Z0-9._\-]*" placeholder="wrist-camera.calibration"></label>
+        <small>Reuse this ID and the same labels to compare this field across captures.</small>
+        <label>Recorded version or value<input id="value" required maxlength="512" placeholder="C18"></label>
+        <label>Your name<input id="author" required maxlength="120" autocomplete="off"></label>
+        <label>Record type<select id="reality" required><option value="">Choose a record type</option><option value="real">Real metadata</option><option value="synthetic">Synthetic example</option></select></label>
+        <label class="check"><input id="approved" type="checkbox" required>I reviewed every field. This contains approved metadata only—no secrets, source code or raw data.</label>
+        <button type="submit">Download approved capture</button>
+      </fieldset>
+    </form>
+    <p id="error" role="alert" tabindex="-1"></p>
+    <details><summary>How to use it in Tav</summary><ol><li>Keep the downloaded JSON outside the project repository.</li><li>In Tav, select a robot and open <strong>Import Chrome capture</strong>.</li><li>Review and add the snapshot. Export your local workspace, or save your organization draft.</li></ol></details>
+    <p class="footnote">Local capture only. No background browsing, page-body collection or automatic uploads. Closing this popup discards the draft. A page reference does not verify physical hardware or establish a failure’s cause.</p>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

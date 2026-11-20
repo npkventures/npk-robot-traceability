@@ -10,7 +10,7 @@ Hi [actual name],
 
 [Truthful reference to a conversation or introduction, if one happened. Otherwise omit.]
 
-We have a working synthetic walkthrough of Tavrik: [verified public walkthrough URL]. It shows how an engineer can compare recorded configuration changes between a successful and failed manipulation test, inspect missing evidence and retain the exact earlier revision.
+We have a working synthetic walkthrough of Tav: [verified public walkthrough URL]. It shows how an engineer can compare recorded configuration changes between a successful and failed manipulation test, inspect missing evidence and retain the exact earlier revision.
 
 The examples are invented. We have not established customer time savings, and customer hosting is not open yet. We are looking for commercial manipulation teams willing to discuss a recent regression and the gaps in their existing records.
 
@@ -20,7 +20,7 @@ Would a short conversation about one sanitized incident be useful? Please do not
 
 ## Private-product release, only after operational gates pass
 
-Subject: Tavrik follow-up for [actual agreed workflow]
+Subject: Tav follow-up for [actual agreed workflow]
 
 Hi [actual participant name],
 

@@ -37,9 +37,9 @@ export default function MarketingHome() {
     <section className="t-product m-wrap" aria-label="Synthetic product preview">
       <InvestigationPrompt />
       <AnimatedContent distance={90} scale={0.94} duration={1} animateOpacity={false} data-animated-content><div className="t-window" data-hero-art>
-        <div className="t-window-bar"><span className="t-window-dots" aria-hidden="true"><i /><i /><i /></span><span>Tavrik / Test history</span><span className="t-example">Synthetic example</span></div>
+        <div className="t-window-bar"><span className="t-window-dots" aria-hidden="true"><i /><i /><i /></span><span>Tav / Test history</span><span className="t-example">Synthetic example</span></div>
         <div className="t-app-layout">
-          <aside className="t-app-sidebar" aria-label="Preview context"><strong>Tavrik<span> / </span></strong><p>ROBOT RECORDS</p><span className="t-selected">↳ Manipulation cell</span><span>Test history</span><span>Configurations</span><span>Investigations</span><div className="t-sidebar-foot"><span aria-hidden="true">◈</span> Every run.<br />Its own record.</div></aside>
+          <aside className="t-app-sidebar" aria-label="Preview context"><strong>Tav<span> / </span></strong><p>ROBOT RECORDS</p><span className="t-selected">↳ Manipulation cell</span><span>Test history</span><span>Configurations</span><span>Investigations</span><div className="t-sidebar-foot"><span aria-hidden="true">◈</span> Every run.<br />Its own record.</div></aside>
           <div className="t-app-main">
             <div className="t-app-title"><div><p>MANIPULATION CELL / RUN COMPARISON</p><h2>A test changed.<br className="t-mobile" /> Here’s the record.</h2></div><Link href="/services/run-comparison/" aria-label="Open the interactive run comparison">Open comparison ↗</Link></div>
             <div className="t-run-cards"><div><span className="t-status t-success">Successful baseline</span><strong>{baseline.id}</strong><p>{baseline.successfulPicks}/{baseline.attemptedPicks} successful picks</p><small>Snapshot revision {baseline.snapshotRevision}</small></div><span className="t-run-arrow" aria-hidden="true">→</span><div><span className="t-status t-failure">Failed test</span><strong>{target.id}</strong><p>{target.successfulPicks}/{target.attemptedPicks} successful picks</p><small>Snapshot revision {target.snapshotRevision}</small></div></div>
@@ -50,13 +50,13 @@ export default function MarketingHome() {
         </div>
       </div>
       </AnimatedContent>
-      <p className="t-preview-caption">An illustrative view of Tavrik’s comparison workflow, using invented records and unavailable evidence. <Link href="/walkthrough/">See the walkthrough ↗</Link></p>
+      <p className="t-preview-caption">An illustrative view of Tav’s comparison workflow, using invented records and unavailable evidence. <Link href="/walkthrough/">See the walkthrough ↗</Link></p>
       <DeveloperTools />
     </section>
 
     <section className="t-onboarding m-wrap" aria-labelledby="onboarding-title">
       <AnimatedContent distance={65} duration={0.85} animateOpacity={false} data-animated-content><h2 id="onboarding-title">Your team.<br /><span>A direct line to ours.</span></h2><p>We’re planning to work closely with a small group of robotics teams. Start with a demo, talk through your workflow, and decide together whether a pilot fits.</p><Link className="t-secondary" href="/services/pilot/">Explore the proposed four-week pilot ↗</Link></AnimatedContent>
-      <ol className="t-onboarding-list" data-reveal><li><span>01</span><div><h3>Meet Tavrik</h3><p>Walk through a test comparison with the founders.</p></div></li><li><span>02</span><div><h3>Map your workflow</h3><p>Discuss your robots, existing tools, and the records you need.</p></div></li><li><span>03</span><div><h3>Agree on a focused pilot</h3><p>Define scope and readiness together before connecting real records.</p></div></li></ol>
+      <ol className="t-onboarding-list" data-reveal><li><span>01</span><div><h3>Meet Tav</h3><p>Walk through a test comparison with the founders.</p></div></li><li><span>02</span><div><h3>Map your workflow</h3><p>Discuss your robots, existing tools, and the records you need.</p></div></li><li><span>03</span><div><h3>Agree on a focused pilot</h3><p>Define scope and readiness together before connecting real records.</p></div></li></ol>
     </section>
 
     <section className="t-invitation m-wrap"><AnimatedContent distance={65} duration={0.85} animateOpacity={false} data-animated-content><h2>Let’s look at<br /><span>what changed.</span></h2><p>Pricing is tailored to your team after a demo and discussion.</p><a className="t-button" href="/login/?mode=signup">Get started <span aria-hidden="true">↗</span></a><p className="t-caption"><a href={booking.href}>Discuss your team’s workflow with us.</a></p></AnimatedContent></section>

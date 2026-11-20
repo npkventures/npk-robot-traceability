@@ -51,7 +51,7 @@ function evidence(v:unknown):EvidenceValue {
 }
 export function validateAttempt(v:unknown):Attempt {
   exact(v,['job_id','attempt_id','retry_of','robot_id','snapshot_id','snapshot_revision','source_identity','procedure','procedure_version','task','environment','components','reality','method']);
-  if(!['real','simulation','synthetic'].includes(String(v.reality))||!['manual','collector'].includes(String(v.method)))throw Error('Declare reality and collection method separately.');
+  if(typeof v.reality!=='string'||!['real','simulation','synthetic'].includes(v.reality)||typeof v.method!=='string'||!['manual','collector'].includes(v.method))throw Error('Declare reality and collection method separately.');
   const attempt_id=machineId(v.attempt_id),retry_of=v.retry_of===null?null:machineId(v.retry_of);
   if(attempt_id===retry_of)throw Error('A retry must reference a different attempt.');
   return {job_id:machineId(v.job_id),attempt_id,retry_of,robot_id:identifier(v.robot_id),snapshot_id:identifier(v.snapshot_id),snapshot_revision:integer(v.snapshot_revision,1),source_identity:machineId(v.source_identity),
@@ -70,7 +70,7 @@ export function validateLifecycleEvent(v:unknown):LifecycleEvent {
     case 'step':exact(p,['step_id','state']);payload={step_id:identifier(p.step_id),state:state(p.state)};break;
     case 'measurement':
       exact(p,['name','state','value','unit','reason']);
-      if(!['known','unknown','not-applicable'].includes(String(p.state)))throw Error('Invalid measurement evidence state.');
+      if(typeof p.state!=='string'||!['known','unknown','not-applicable'].includes(p.state))throw Error('Invalid measurement evidence state.');
       if(p.state==='known'?(typeof p.value!=='number'||!Number.isFinite(p.value)||p.reason!==null):(p.value!==null||typeof p.reason!=='string'||!p.reason.trim()))throw Error('Missing measurements must have a reason, never an invented zero.');
       payload={name:identifier(p.name),state:p.state as Measurement['state'],value:p.value as number|null,unit:text(p.unit,40),reason:p.reason===null?null:text(p.reason)};
       if(['duration','downtime'].includes(payload.name)&&(payload.unit!=='s'||(payload.value!==null&&payload.value<0)))throw Error('Duration and downtime use nonnegative seconds.');
@@ -78,7 +78,7 @@ export function validateLifecycleEvent(v:unknown):LifecycleEvent {
     case 'label':exact(p,['name','value','evidence']);payload={name:identifier(p.name),value:text(p.value),evidence:text(p.evidence,500)};break;
     case 'component':
       exact(p,['component_id','action','evidence','hours','cycles']);
-      if(!['installed','removed','maintained','serviced'].includes(String(p.action)))throw Error('Invalid component action.');
+      if(typeof p.action!=='string'||!['installed','removed','maintained','serviced'].includes(p.action))throw Error('Invalid component action.');
       payload={component_id:identifier(p.component_id),action:p.action as Component['action'],evidence:text(p.evidence,500),hours:nonnegative(p.hours),cycles:p.cycles===null?null:integer(p.cycles)};break;
     default:throw Error('Unsupported lifecycle event kind.');
   }

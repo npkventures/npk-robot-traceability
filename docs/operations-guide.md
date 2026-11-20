@@ -1,4 +1,4 @@
-# Tavrik operating guide and completion map
+# Tav operating guide and completion map
 
 November 1 backend update: use [B13 operations and release evidence](backend-operations.md) for the current B1–B12 compatibility matrix, client onboarding, command/report recovery and remaining deployment gates. The October inventory below is historical; incremental history, client roles, connectors and reports now have separate feature guides. No customer hosting or public launch is established.
 
@@ -86,7 +86,7 @@ flowchart TD
   E --> I
 ```
 
-The whole database also includes provider-managed schemas: **auth** (accounts, sessions, identity/MFA/OAuth machinery), **storage** (object-storage infrastructure), **realtime** (subscriptions/messages), **extensions** (query statistics), **supabase_migrations** (applied migration history), and **vault** (secret infrastructure). Their existence does not mean Tavrik uses every feature. Do not edit managed tables or export session/token/vault values to inspect the product. The [inspection SQL](database-inspection.sql) lists all visible schema objects and all public columns without retrieving secret contents. Run it in SQL Editor; if only the last result appears, select and execute an individual SELECT. It also checks counts, exact run references, bundle consistency, RLS and helper grants.
+The whole database also includes provider-managed schemas: **auth** (accounts, sessions, identity/MFA/OAuth machinery), **storage** (object-storage infrastructure), **realtime** (subscriptions/messages), **extensions** (query statistics), **supabase_migrations** (applied migration history), and **vault** (secret infrastructure). Their existence does not mean Tav uses every feature. Do not edit managed tables or export session/token/vault values to inspect the product. The [inspection SQL](database-inspection.sql) lists all visible schema objects and all public columns without retrieving secret contents. Run it in SQL Editor; if only the last result appears, select and execute an individual SELECT. It also checks counts, exact run references, bundle consistency, RLS and helper grants.
 
 ## First walkthrough
 

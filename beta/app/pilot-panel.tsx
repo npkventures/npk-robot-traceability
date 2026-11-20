@@ -40,7 +40,7 @@ export default function PilotPanel({ org, api }: {org: string; api: Api}) {
         <label>Decision<select name="decision" defaultValue={latest?.payload.decision??'pending'}><option value="pending">Pending evidence</option><option value="continue-paid">Continue paid — proposal only</option><option value="revise">Revise scope / value / pricing</option><option value="stop">Stop</option></select></label>
         <button disabled={busy || !data.weeks[week-1].started}>Save weekly review</button>
       </form>
-      <button disabled={busy} onClick={()=>void perform(async()=>{const fresh=await api(`org/${org}/pilot`);setData(fresh);const url=URL.createObjectURL(new Blob([JSON.stringify(fresh,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='tavrik-pilot-summary.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);})}>Export pilot summary</button>
+      <button disabled={busy} onClick={()=>void perform(async()=>{const fresh=await api(`org/${org}/pilot`);setData(fresh);const url=URL.createObjectURL(new Blob([JSON.stringify(fresh,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='tav-pilot-summary.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);})}>Export pilot summary</button>
       <p>USD 1,000 for four weeks is an unvalidated, negotiable pricing hypothesis. No billing or subscription activation occurs here.</p>
       <ul>{data.limitations.map(s=><li key={s}>{s}</li>)}</ul>
     </>}

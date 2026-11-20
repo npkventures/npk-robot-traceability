@@ -1,6 +1,6 @@
 {
   "openapi": "3.1.0",
-  "info": {"title": "Tavrik ingestion and approved reports", "version": "1.2.0", "description": "Run captures, execution evidence and scoped approved JSON reports. Use your administrator-configured private HTTPS origin. Physical execution and public deployment are not implied."},
+  "info": {"title": "Tav ingestion and approved reports", "version": "1.2.0", "description": "Run captures, execution evidence and scoped approved JSON reports. Use your administrator-configured private HTTPS origin. Physical execution and public deployment are not implied."},
   "security": [{"machineBearer": []}],
   "paths": {
     "/api/v1/reports": {

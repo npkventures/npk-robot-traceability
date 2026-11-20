@@ -20,7 +20,7 @@ export default function InvestigationPanel({bundle,runId,baselineId,chooseBaseli
   function download(id:string) {
     const report=investigationReport(bundle.records,history,id,bundle.synthetic);
     const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));
-    const a=document.createElement('a');a.href=url;a.download=`tavrik-investigation-${id}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+    const a=document.createElement('a');a.href=url;a.download=`tav-investigation-${id}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
   }
   return <section className="local-panel" aria-label="Investigation">
     <h3>Notes and findings</h3><p>Record what you checked and what you found. A change alone does not prove a cause.</p>

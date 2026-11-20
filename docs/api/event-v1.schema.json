@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:unify:event:1",
-  "title": "Tavrik approved run event v1",
-  "description": "Maximum UTF-8 body: 2097152 bytes. Capture structure is additionally validated by the existing Tavrik record validator; cross-field relationships, provenance and units cannot be established by this envelope schema alone.",
+  "title": "Tav approved run event v1",
+  "description": "Maximum UTF-8 body: 2097152 bytes. Capture structure is additionally validated by the existing Tav record validator; cross-field relationships, provenance and units cannot be established by this envelope schema alone.",
   "type": "object",
   "additionalProperties": false,
   "required": ["event_id", "schema_version", "run_id", "source_identity", "source_sequence", "observed_at", "event_type", "payload"],

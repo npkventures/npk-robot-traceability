@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 import unify_collector as collector
 import upload_queue as queue
+from http_response import read_json_response
 
 UUID = re.compile(r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
 
@@ -65,9 +66,7 @@ def flush_events(directory, endpoint, token, opener=None, sleep=time.sleep, jitt
                 headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
             try:
                 with opener.open(req, timeout=15) as response:
-                    if response.status != 200:
-                        raise ValueError('Unconfirmed event; queue retained.')
-                    return json.loads(response.read(8192))
+                    return read_json_response(response, 8192)
             except urllib.error.HTTPError as error:
                 status = error.code
                 error.close()
@@ -99,7 +98,7 @@ def flush_events(directory, endpoint, token, opener=None, sleep=time.sleep, jitt
                 receipt = request(endpoint, body)
             if (not isinstance(receipt, dict) or receipt.get('event_id') != event['event_id']
                 or receipt.get('source_identity') != event['source_identity']
-                or receipt.get('source_sequence') != event['source_sequence']
+                or type(receipt.get('source_sequence')) is not int or receipt['source_sequence'] != event['source_sequence']
                 or receipt.get('body_hash') != digest or type(receipt.get('version')) is not int
                 or receipt['version'] < 1 or type(receipt.get('duplicate')) is not bool):
                 raise ValueError('Receipt does not confirm these exact queued bytes.')

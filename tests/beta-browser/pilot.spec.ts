@@ -33,7 +33,7 @@ test('owner enrolls, appends review and exports; responsive accessible pilot (mo
  await expect(page.getByRole('region',{name:'Week 2 summary'})).toContainText('Not yet observed');
  await expect(page.getByLabel('Review week').locator('option[value="2"]')).toHaveJSProperty('disabled',true);
  expect(data.reviews[0].payload.assistedSessions).toBeNull();expect(data.reviews[0].payload.supportMinutes).toBe(0);
- const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Export pilot summary'}).click();const download=await downloadPromise;expect(download.suggestedFilename()).toBe('tavrik-pilot-summary.json');
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Export pilot summary'}).click();const download=await downloadPromise;expect(download.suggestedFilename()).toBe('tav-pilot-summary.json');
  const exported=JSON.parse(await readFile((await download.path())!,'utf8'));expect(exported.weeks[0].coveragePercent).toBe(90);expect(exported.weeks[1].activeOrganizations).toBeNull();expect(exported.records).toBeUndefined();
  for(const width of [320,768,1440]){await page.setViewportSize({width,height:960});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  expect((await new AxeBuilder({page}).include('.pilot-panel').analyze()).violations).toEqual([]);

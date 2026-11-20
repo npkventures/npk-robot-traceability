@@ -82,7 +82,7 @@ test('public links resolve and security claims stay factual', async ({ page }) =
     for (const href of await page.locator('a[href^="/"]').evaluateAll(links => [...new Set(links.map(a => a.getAttribute('href')!))])) expect((await page.request.get(href)).status(), href).toBe(200);
     await expect(page.locator('img:not([alt])')).toHaveCount(0);
   }
-  await expect(page.getByText('No Tavrik certifications or independent security audits are claimed.', { exact:true })).toBeVisible();
+  await expect(page.getByText('No Tav certifications or independent security audits are claimed.', { exact:true })).toBeVisible();
 });
 for (const path of ['/compatibility/', '/security/']) {
   for (const width of [320, 1440]) test(`${path} accessibility at ${width}px`, async ({ page }) => {

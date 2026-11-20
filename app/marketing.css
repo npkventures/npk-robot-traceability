@@ -16,7 +16,9 @@
 .m-wrap{width:min(1320px,calc(100% - 112px));margin-inline:auto}
 .m-header{display:flex;align-items:center;justify-content:space-between;gap:32px;min-height:108px;border-bottom:1px solid var(--line)}
 .m-logo{font:600 30px/1 var(--body);letter-spacing:-2px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;min-height:44px}
-.m-logo span{font-size:13px;letter-spacing:0;align-self:flex-start;margin-top:12px}
+.m-brand{display:inline-flex;align-items:center;gap:.4em}
+.m-monogram{display:block;width:1.4em;height:1.4em;flex:none}
+.m-wordmark{display:block;width:2.758em;height:1.5em;overflow:visible;flex:none}
 .m-header nav{display:flex;gap:28px}
 .m-header nav a,.m-product-link{font-size:14px;text-decoration:none;min-height:44px;display:inline-flex;align-items:center;gap:20px}
 .m-header nav a{position:relative;color:var(--muted)}
@@ -175,3 +177,5 @@
   .marketing *{animation:none!important;transition:none!important}
   .marketing .m-sculpture{transform:none}.marketing [data-reveal]{opacity:1;transform:none}
 }
+
+.m-extension-callout{border:1px solid currentColor;border-radius:8px;padding:20px;margin-top:24px;max-width:480px}.m-extension-callout .m-kicker{display:block;margin-bottom:8px}.m-extension-callout .m-small{margin-bottom:0}.m-extension-steps{padding-left:22px;line-height:1.7}.m-extension-steps li{margin-bottom:12px}.m-header nav{flex-wrap:wrap}@media(max-width:700px){.m-header nav{justify-content:flex-start;column-gap:16px}}

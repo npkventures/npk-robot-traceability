@@ -71,6 +71,85 @@ test('logout revokes the approved session even after the access cookie expired',
  throw Error('Unexpected call');});
  const result=await handler(request('logout',{},'unify_refresh=old'));assert.equal(result.status,200);assert.equal(revoked,true);assert.match(result.headers.get('set-cookie'),/unify_refresh=;.*Max-Age=0/);
 });
+
+for(const flow of ['login','refresh','oauth'])test(`${flow} rejects malformed sessions before user lookup or approval`,async()=>{
+ const valid={access_token:token(),refresh_token:'synthetic-refresh',expires_in:3600};
+ const malformed=[{...valid,expires_in:3600.5},null,[],{},
+  ...['','   ',null,42,[]].map(access_token=>({...valid,access_token})),
+  ...[0,-1,0.5,'3600',null,Number.MAX_SAFE_INTEGER+1].map(expires_in=>({...valid,expires_in})),
+  ...[{},[],42,true,'   '].map(refresh_token=>({...valid,refresh_token})),
+ ];
+ for(const payload of malformed){
+  const calls=[];
+  const handler=createHandler(async(url)=>{
+   calls.push(url);
+   if(url.includes('/auth/v1/token?'))return Response.json(payload);
+   if(url.endsWith('/auth/v1/user'))return Response.json({id:user,email_confirmed_at:'2026-10-22',identities:[{provider:'google',identity_id:google}]});
+   if(url.endsWith('/approve_app_session')||url.endsWith('/app_session_allowed'))return Response.json(true);
+   throw Error('Unexpected call');
+  });
+  const callbackCookie=beginGoogle(cfg).headers.get('set-cookie').split(';')[0];
+  const result=await handler(flow==='oauth'?request('oauth-callback?code=synthetic',undefined,callbackCookie):request(flow,flow==='login'?{email:'synthetic@example.invalid',password:'synthetic-password'}:{},'unify_refresh=old'));
+  if(flow==='oauth'){
+   assert.equal(result.status,303);
+   assert.equal(result.headers.get('location'),cfg.origin+'/login?auth_error=google');
+   assert.ok(result.headers.getSetCookie().every(value=>value.includes('Max-Age=0')));
+  }else{
+   assert.equal(result.status,503,JSON.stringify(payload));
+   assert.deepEqual(await result.json(),{error:'Invalid authentication response.'});
+   assert.equal(result.headers.get('set-cookie'),null);
+  }
+  assert.equal(calls.length,1,'Invalid sessions must not reach user lookup or approval');
+ }
+});
+
+test('valid session cookies preserve tokens, expiry caps and optional refresh behavior',async()=>{
+ for(const flow of ['login','refresh','oauth'])for(const expires_in of [1,3600,7200])for(const refresh_token of [undefined,null,'','synthetic+/=refresh']){
+  const access_token=token(flow==='oauth'?'oauth':'password');let checks=0;
+  const handler=createHandler(async(url,options)=>{
+   if(url.includes('/auth/v1/token?'))return Response.json({access_token,expires_in,refresh_token});
+   if(url.endsWith('/auth/v1/user')){
+    assert.equal(options.headers.Authorization,'Bearer '+access_token);
+    return Response.json({id:user,email_confirmed_at:'2026-10-22',identities:[{provider:'google',identity_id:google}]});
+   }
+   if(url.endsWith('/approve_app_session')||url.endsWith('/app_session_allowed')){checks++;return Response.json(true);}
+   throw Error('Unexpected call');
+  });
+  const callbackCookie=beginGoogle(cfg).headers.get('set-cookie').split(';')[0];
+  const result=await handler(flow==='oauth'?request('oauth-callback?code=synthetic',undefined,callbackCookie):request(flow,flow==='login'?{email:'synthetic@example.invalid',password:'synthetic-password'}:{},'unify_refresh=old'));
+  assert.equal(result.status,flow==='oauth'?303:200);assert.equal(checks,1);
+  if(flow==='oauth')assert.equal(result.headers.get('location'),cfg.origin+'/app');
+  else assert.deepEqual(await result.json(),{signedIn:true});
+  const cookies=result.headers.getSetCookie();
+  assert.equal(cookies.find(c=>c.startsWith('unify_session=')),`unify_session=${encodeURIComponent(access_token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${Math.min(3600,expires_in)}; Secure`);
+  assert.equal(cookies.find(c=>c.startsWith('unify_refresh=')),`unify_refresh=${encodeURIComponent(refresh_token??'')}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${refresh_token?2592000:0}; Secure`);
+ }
+});
+
+test('session authorization requires literal true for refresh, requests and repeated checks',async()=>{
+ const oldPortal=process.env.BETA_PORTAL_ENABLED;process.env.BETA_PORTAL_ENABLED='true';
+ try {
+ for(const invalid of [false,null,'false','true',1,[],{}, {allowed:true}]){
+  for(const path of ['refresh','session',`client-updates/${org}/${google}`,`org/${org}/history`]){
+   let checks=0,downstream=0;
+   const repeated=path.includes('client-updates')||path.endsWith('/history');
+   const handler=createHandler(async(url)=>{
+    if(url.includes('grant_type=refresh_token'))return Response.json({access_token:token(),refresh_token:'rotated',expires_in:3600});
+    if(url.endsWith('/auth/v1/user'))return Response.json({id:user,email_confirmed_at:'2026-10-22'});
+    if(url.endsWith('/app_session_allowed'))return Response.json(++checks===1&&repeated?true:invalid);
+    if(url.includes('/memberships'))return Response.json([{role:'owner'}]);
+    downstream++;
+    return Response.json([]);
+   });
+   const response=await handler(request(path,path==='refresh'?{}:undefined,`unify_session=${token()}; unify_refresh=old`));
+   assert.equal(response.status,401,`${path}: ${JSON.stringify(invalid)}`);
+   assert.equal(response.headers.get('set-cookie'),null);
+   assert.equal(checks,repeated?2:1);
+   assert.equal(downstream,0);
+  }
+ }
+ }finally{if(oldPortal===undefined)delete process.env.BETA_PORTAL_ENABLED;else process.env.BETA_PORTAL_ENABLED=oldPortal;}
+});
 test('database refuses unapproved auto-linked sessions and revokes direct RLS access',async()=>{
  const db=new PGlite();try{
  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;

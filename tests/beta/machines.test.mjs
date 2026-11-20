@@ -100,10 +100,51 @@ test('machine HTTP routes use bearer scope, bounded validated metadata and safe 
  const e=event(randomUUID()),raw=JSON.stringify(e);
  const request=(body=raw,token='um_'+'a'.repeat(64))=>new Request('https://beta.example.invalid/api/v1/events',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body});
  assert.equal((await handler(request())).status,200);assert.equal(called,1);
+ for(const event_type of [['run.recorded'],[['run.recorded']],{},null,1]){
+  assert.equal((await handler(request(JSON.stringify({...e,event_type})))).status,400);
+  assert.equal(called,1);
+ }
  assert.equal((await handler(request(JSON.stringify({...e,secret:'no'})))).status,400);assert.equal(called,1);
  assert.equal((await handler(request(raw,'uc_'+'a'.repeat(64)))).status,401);
  assert.equal((await handler(request('x'.repeat(2097153)))).status,413);
  assert.equal((await handler(request(new Uint8Array([0xff,0xfe])))).status,400);
  errorCode='rate_limited';const response=await handler(request());assert.equal(response.status,429);assert.equal(response.headers.get('retry-after'),'60');
  process.env.BETA_MACHINES_ENABLED='false';assert.equal((await handler(request())).status,503);
+});
+
+test('machine administration rejects coerced operations and kinds before issuing credentials',async()=>{
+ Object.assign(process.env,{BETA_ENABLED:'true',BETA_MACHINES_ENABLED:'true',BETA_AUTH_LIFECYCLE:'false',BETA_ORIGIN:'https://beta.example.invalid',SUPABASE_URL:'https://db.example.invalid',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'server'});
+ const machine=randomUUID(),project=randomUUID();let calls=0,expected;
+ const input={action:'create',name:'Synthetic identity',kind:'collector',project_id:project,robot_id:'robot-01',expires_days:'30',per_minute:'60',capability:'events:write'};
+ const handler=createHandler(async(url,options)=>{
+  if(url.endsWith('/auth/v1/user'))return Response.json({id:owner});
+  if(url.includes('/memberships'))return Response.json([{role:'owner'}]);
+  assert.match(url,/rpc\/machine_admin$/);calls++;
+  const body=JSON.parse(options.body);assert.equal(body.p_action,expected);
+  assert.equal(body.p_org,org);assert.equal(body.p_actor,owner);
+  if(['create','rotate'].includes(expected))assert.match(body.p_data.token_hash,/^[a-f0-9]{64}$/);
+  else assert.equal(body.p_data.token_hash,undefined);
+  return Response.json({id:machine});
+ });
+ const send=body=>handler(new Request(`${process.env.BETA_ORIGIN}/api/org/${org}/machines`,{method:'POST',headers:{Origin:process.env.BETA_ORIGIN,Cookie:'unify_session=synthetic','Content-Type':'application/json'},body:JSON.stringify(body)}));
+ for(const bad of [
+  ...['create','rotate','revoke','revoke_token'].map(action=>({...input,action:[action],id:machine,overlap_minutes:0})),
+  ...['collector','gateway','api_client'].map(kind=>({...input,kind:[kind]})),
+ ]){
+  expected=String(bad.action);
+  const response=await send(bad);assert.equal(response.status,400,JSON.stringify(bad));
+  assert.doesNotMatch(await response.text(),/um_/);assert.equal(calls,0);
+ }
+ for(const valid of [
+  ...['collector','gateway','api_client'].map(kind=>({...input,kind})),
+  {action:'rotate',id:machine,expires_days:'30',overlap_minutes:'0'},
+  ...['revoke','revoke_token'].map(action=>({action,id:machine})),
+ ]){
+  expected=valid.action;
+  const response=await send(valid);assert.equal(response.status,200);
+  const body=await response.json();
+  if(['create','rotate'].includes(expected))assert.match(body.token,/^um_[a-f0-9]{64}$/);
+  else assert.equal(body.token,undefined);
+ }
+ assert.equal(calls,6);
 });

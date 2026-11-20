@@ -13,7 +13,7 @@ function exact(value: unknown, keys: string[]): asserts value is Record<string, 
 export function validateMachineEvent(value: unknown) {
   exact(value, ['event_id','schema_version','run_id','source_identity','source_sequence','observed_at','event_type','payload']);
   const event_id = machineId(value.event_id), source_identity = machineId(value.source_identity);
-  if (value.schema_version !== 1 || !['run.recorded','execution.recorded'].includes(String(value.event_type))) throw Error('Use schema_version 1 and a supported event type.');
+  if (value.schema_version !== 1 || typeof value.event_type !== 'string' || !['run.recorded','execution.recorded'].includes(value.event_type)) throw Error('Use schema_version 1 and a supported event type.');
   if (!Number.isSafeInteger(value.source_sequence) || Number(value.source_sequence) < 0) throw Error('source_sequence must be a nonnegative safe integer, persisted across restarts.');
   if (typeof value.observed_at !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value.observed_at) || !Number.isFinite(Date.parse(value.observed_at)) || new Date(value.observed_at).toISOString() !== value.observed_at) throw Error('observed_at must be a valid UTC timestamp with milliseconds.');
   if(value.event_type==='execution.recorded'){
@@ -38,7 +38,7 @@ export function validateMachineEvent(value: unknown) {
 
 export function machineAdminInput(value: Record<string, unknown>) {
   const action = value.action;
-  if (!['create','rotate','revoke','revoke_token'].includes(String(action))) throw Error('Choose create, rotate, revoke or revoke_token.');
+  if (typeof action !== 'string' || !['create','rotate','revoke','revoke_token'].includes(action)) throw Error('Choose create, rotate, revoke or revoke_token.');
   if (action === 'revoke' || action === 'revoke_token') return {action, id:machineId(value.id)};
   const expires_days = Number(value.expires_days);
   if (!Number.isInteger(expires_days) || expires_days < 1 || expires_days > 90) throw Error('Expiry must be 1–90 days.');
@@ -50,7 +50,7 @@ export function machineAdminInput(value: Record<string, unknown>) {
   const name = value.name, robot_id = value.robot_id, kind = value.kind;
   if (typeof name !== 'string' || !name.trim() || name.length > 120) throw Error('Enter a name of at most 120 characters.');
   if (typeof robot_id !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,119}$/.test(robot_id)) throw Error('Choose a saved robot.');
-  if (!['collector','gateway','api_client'].includes(String(kind))) throw Error('Choose a supported identity kind.');
+  if (typeof kind !== 'string' || !['collector','gateway','api_client'].includes(kind)) throw Error('Choose a supported identity kind.');
   const per_minute = Number(value.per_minute);
   if (!Number.isInteger(per_minute) || per_minute < 1 || per_minute > 600) throw Error('Request limit must be 1–600 per minute.');
   if (value.capability !== 'events:write' && value.capability !== 'receipts:read') throw Error('Choose events:write or receipts:read.');

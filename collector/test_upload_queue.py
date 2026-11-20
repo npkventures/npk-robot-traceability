@@ -1,4 +1,5 @@
 import io
+from http.client import HTTPResponse
 import json
 from pathlib import Path
 import tempfile
@@ -13,6 +14,14 @@ from test_collector import config
 
 class Reply(io.BytesIO):
     status = 200
+
+def http_reply(body, headers=None):
+    class Socket:
+        def makefile(self, *args):
+            return io.BytesIO(b'HTTP/1.1 200 OK\r\n' + (headers or b'') + b'\r\n' + body)
+    response = HTTPResponse(Socket())
+    response.begin()
+    return response
 
 class Opener:
     def __init__(self, results):
@@ -57,6 +66,22 @@ class QueueTests(unittest.TestCase):
         self.assertEqual(delays, [1, 2])
         self.assertEqual(len({call[0].data for call in remote.calls}), 1)
         self.assertTrue((self.queue / (self.key + '.json')).exists())
+    def test_oversized_response_cannot_acknowledge_a_valid_json_prefix(self):
+        body = json.dumps({'version': 1, 'duplicate': True}).encode().ljust(4096, b' ') + b'not-json'
+        with patch.object(Opener, 'open', return_value=Reply(body)):
+            with self.assertRaises(ValueError):
+                q.flush(self.queue, 'https://beta.example.invalid/api/ingest/org', self.token, opener=Opener([]))
+        self.assertTrue((self.queue / (self.key + '.json')).exists())
+        self.assertTrue(self.source.exists())
+    def test_truncated_http_response_cannot_acknowledge_queue(self):
+        body = b'{"version":1,"duplicate":false}'
+        replies = [http_reply(body, b'Content-Length: 100\r\n'),
+                   http_reply(b'1f\r\n' + body + b'\r\n', b'Transfer-Encoding: chunked\r\n')]
+        for response in replies:
+            with self.subTest(headers=response.headers), patch.object(Opener, 'open', return_value=response):
+                with self.assertRaises(ValueError):
+                    q.flush(self.queue, 'https://beta.example.invalid/api/ingest/org', self.token, opener=Opener([]))
+            self.assertTrue((self.queue / (self.key + '.json')).exists())
     def test_failed_publish_retains_original_and_has_no_partial_queue_entry(self):
         directory = self.root / 'interrupted'
         with patch.object(q.os, 'replace', side_effect=OSError('disk failure')):

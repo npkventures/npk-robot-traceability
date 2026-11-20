@@ -19,6 +19,36 @@ function backend(role='member'){
   return Response.json({error:'Unknown stub route'},{status:404});
  });return {handle,calls};
 }
+test('JSON media type is exact and case-insensitive before upstream access',async()=>{
+ for(const type of ['application/json','Application/JSON','application/json; charset=utf-8']){
+  const {handle,calls}=backend();
+  assert.equal((await handle(request('login',{email:'test@example.invalid',password:'synthetic-password'},{'Content-Type':type}))).status,200);
+  assert.equal(calls.length,1);
+ }
+ for(const type of ['application/jsonp','application/json-extra','text/plain']){
+  const {handle,calls}=backend();
+  assert.equal((await handle(request('login',{email:'test@example.invalid',password:'synthetic-password'},{'Content-Type':type}))).status,415);
+  assert.equal(calls.length,0);
+ }
+});
+test('interrupted request bodies return a sanitized client error and release the reader',async()=>{
+ let calls=0;
+ const handle=createHandler(async()=>{calls++;return Response.json({});});
+ const body=new ReadableStream({pull(controller){controller.error(Error('private transport detail'));}});
+ const req=new Request('https://beta.example.invalid/api/login',{method:'POST',headers:{Origin:'https://beta.example.invalid','Content-Type':'application/json'},body,duplex:'half'});
+ const response=await handle(req);
+ assert.equal(response.status,400);assert.doesNotMatch(await response.text(),/private transport detail/);
+ assert.equal(calls,0);assert.equal(body.locked,false);
+});
+test('body cancellation failures preserve the payload limit and successful reads release locks',async()=>{
+ let cancelled=false;
+ const body=new ReadableStream({start(controller){controller.enqueue(new Uint8Array(1025));},cancel(){cancelled=true;throw Error('private cancellation detail');}});
+ const req=new Request('https://example.invalid',{method:'POST',headers:{'Content-Type':'application/json'},body,duplex:'half'});
+ await assert.rejects(readBody(req,1024),error=>error.status===413&& !error.message.includes('private'));
+ assert.equal(cancelled,true);assert.equal(body.locked,false);
+ const valid=new Request('https://example.invalid',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"valid":true}'});
+ assert.deepEqual(await readBody(valid),{valid:true});assert.equal(valid.body.locked,false);
+});
 test('pilot API enforces owner access, validates measurements and fails clearly without migration',async()=>{
  for(const role of ['member','viewer']){
   const {handle,calls}=backend(role);
@@ -30,6 +60,21 @@ test('pilot API enforces owner access, validates measurements and fails clearly 
  assert.equal((await handle(request(`org/${A}/pilot-review`,{week:1}))).status,400);
  const unavailable=await handle(request(`org/${A}/pilot`));assert.equal(unavailable.status,503);assert.match((await unavailable.json()).error,/Stage 8 migration/);
  assert.equal((await handle(request(`org/${B}/pilot`))).status,403);
+});
+
+test('oversized requests reject before stalled cancellation settles',async()=>{
+ for(const fail of [false,true]){
+  let settle,cancelled=false,timer,calls=0;
+  const pending=new Promise((resolve,reject)=>{settle=()=>fail?reject(Error('private cancellation detail')):resolve();});
+  const body=new ReadableStream({start(c){c.enqueue(new Uint8Array(8193));},cancel(){cancelled=true;return pending;}});
+  const req=new Request('https://beta.example.invalid/api/login',{method:'POST',headers:{Origin:'https://beta.example.invalid','Content-Type':'application/json'},body,duplex:'half'});
+  const result=createHandler(async()=>{calls++;return Response.json({});})(req);
+  try{
+   const response=await Promise.race([result,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Size rejection waited for cancellation')),250);})]);
+   assert.equal(response.status,413);assert.deepEqual(await response.json(),{error:'Payload is too large.'});
+   assert.equal(cancelled,true);assert.equal(body.locked,false);assert.equal(calls,0);
+  }finally{clearTimeout(timer);settle();await result;}
+ }
 });
 test('unconfigured beta fails closed without contacting services',async()=>{
  const old=process.env.BETA_ENABLED;process.env.BETA_ENABLED='false';let called=false;
@@ -84,6 +129,17 @@ test('CSRF, missing session and invalid identifiers rejected before any write',a
  assert.equal((await handle(request('session',undefined,{Cookie:''}))).status,401);
  assert.equal((await handle(request('org/not-an-id/workspace'))).status,400);
  assert.equal(calls.filter(c=>c.options.method==='POST').length,0);
+});
+test('malformed or empty session cookies reject access and can still be signed out',async()=>{
+ for(const value of ['%', '%E0%A4%A', '']){
+  const {handle,calls}=backend();
+  const headers={Cookie:'unify_session='+value};
+  assert.equal((await handle(request('session',undefined,headers))).status,401);
+  const logout=await handle(request('logout',{},headers));
+  assert.equal(logout.status,200);
+  assert.match(logout.headers.get('set-cookie'),/unify_session=;.*Max-Age=0/);
+  assert.equal(calls.length,0);
+ }
 });
 test('API denies cross-org reads/exports and viewer writes',async()=>{
  const {handle,calls}=backend('viewer');
