@@ -1,0 +1,10 @@
+{
+  "name": "Option 2 - stacked layers",
+  "component": "function TavWordmark() {\n return <span className=\"m-brand\" aria-hidden=\"true\">\n  <svg className=\"m-monogram\" viewBox=\"0 0 40 40\" fill=\"currentColor\" focusable=\"false\">\n   <path d=\"M20 3L37 12L20 21L3 12Z\" />\n   <path d=\"M3 21L20 30L37 21V28L20 37L3 28Z\" />\n  </svg>\n  <span className=\"m-wordmark\">Tav</span>\n </span>;\n}",
+  "cssRules": [
+    ".m-brand{display:inline-flex;align-items:center;gap:.32em}",
+    ".m-monogram{display:block;width:1.12em;height:1.12em;flex:none}",
+    ".m-wordmark{display:block;font-family:\"Trebuchet MS\",Arial,sans-serif;font-size:1.2em;font-weight:700;line-height:1;letter-spacing:-.045em;flex:none}"
+  ],
+  "favicon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" rx=\"14\" fill=\"#252620\"/><g fill=\"#f4f1e9\" transform=\"translate(8 8) scale(1.2)\"><path d=\"M20 3L37 12L20 21L3 12Z\"/><path d=\"M3 21L20 30L37 21V28L20 37L3 28Z\"/></g></svg>\n"
+}

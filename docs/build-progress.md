@@ -1618,3 +1618,79 @@ Merged local product access/security and minimal shared-demo work with Thomas ba
 Verification: 59 core Node tests passed. Full backend run: 136/138 passed; the two failures were incoming tests expecting pre-product OAuth destinations. Updated those expectations to /login and /app and reran all 11 authentication tests successfully, including database session authorization. Backend checks cover RLS tenant isolation, role restrictions, invitations/revocation, immutable records, command capacity and malformed upstream responses. All 57 Python collector tests passed with Git on PATH. Combined beta production build and TypeScript passed. All 18 selected browser journeys passed assertions: account creation/recovery, provider entry, demo without API/file access, single/multiple teams, intended destinations, explicit invitation acceptance, foreign-team denial, expiry, logout/cross-tab cleanup, late responses, operator restrictions and mobile accessibility. Browser account data is mocked; these results do not verify live provider delivery or customer accounts. Browser server initially lacked sandbox permission to read .env.local; backend was explicitly disabled for these mocked checks. Local environment/build access was separately approved. Core tests initially lacked Python path and the ZIP reflected checkout line endings; both corrected and core tests passed.
 
 Separate read-only merge review covered conflicting UI/routes, permission guard, backend validation/auth changes, additive SQL fixes, packaging, docs and staged file inventory. Resolved route collisions and import permission mismatch during pre-edit review; completed review found no remaining actionable merge defect. Corrected outdated test destinations and normalized affected text line endings. No deployment or live migration applied. New additive SQL fixes are tested in local PostgreSQL-compatible tests, not accepted on the hosted database in this task. Paid billing/entitlements remain unimplemented as documented; external provider, recovery, hosting and customer evidence gates remain open. Next: push the reviewed merge to CNess-edits, verify its remote commit, then perform deployment acceptance separately when requested.
+
+## 2026-11-19 - Open local Git prototype in Chrome
+
+Scope: opened the existing checkout locally at http://127.0.0.1:4173/. The old port-3000 Next process was unresponsive; normal termination did not complete, so force-stopped it with approval and started the existing development command on loopback port 4173. Verified Chrome rendered the Tav homepage, synthetic comparison and Open workspace link. No application changes, dependency installs, migrations, Git synchronization or deployment.
+
+Review: used plan-before-edit and review-agent locally for this operational scope; no findings. Verification covers homepage rendering, not a complete workspace test or backend persistence. Customer/hosting/recovery evidence gates unchanged. Next action: use the open prototype; local workspace records require JSON export.
+
+
+## 2026-11-19 - Chrome extension status check
+
+Read-only inspection of extension documentation, manifest, package script and browser test definitions confirms the local 0.1.0 capture/import implementation and unpacked distribution. Fresh browser-capture unit suite: 5 passed, zero failures/skips. Package --check passed. Browser test definitions are present but were not run in this status check; installed-extension end-to-end behavior in the current Chrome session remains unverified. No Chrome Web Store publication is recorded. Separate read-only status/diff review: No findings. No application changes; evidence gates unchanged. Next action: verify unpacked installation and capture/download/import in Chrome before calling the local extension fully verified.
+
+
+## 2026-11-19 - Simplified Tav identity
+
+Scope: replaced the intricate monogram and narrow SVG lettering with two overlapping rounded frames and a bold Helvetica Neue/Helvetica/Arial Tav wordmark. Shared header/footer component and sizing updated in app/marketing-shell.tsx and app/marketing.css; public/icon.svg matches the new symbol. Recorded the user-directed visual change in build.md section 10. Preserved earlier progress entries and existing line endings. No external font dependency.
+
+Verification: root TypeScript and Git whitespace check with preserved CRLF handling passed. Visually inspected the running homepage in Chrome at desktop and 390px responsive widths; logo remains readable and accessible Tav home links are present. Browser tab retained its cached old favicon during this inspection; the new SVG source is updated, but refreshed tab-icon rendering is not claimed. Separate read-only review using review-agent over the complete artwork/style diff and consumers: No findings. No production build/deployment or customer validation. Next action: user visual review of the open local homepage; hosting and recovery gates unchanged.
+
+
+## 2026-11-19 - Preserve Option 1 and display Option 2
+
+Saved the exact Option 1 component, scoped CSS rules and favicon in docs/branding/option-1.json; docs/branding/README.md explains restoration without replacing unrelated source. Changed the shared marketing logo to a solid geometric T and medium-weight Avenir Next/Avenir/Segoe UI lettering, with matching public/icon.svg. Recorded the alternatives in build.md.
+
+Verification: archive component/styles compared exactly to pre-edit source; root TypeScript and CRLF-aware whitespace checks passed. Visually inspected Option 2 on the running Chrome desktop homepage and confirmed accessible Tav home links. Mobile rendering was not rechecked for Option 2; no production build or deployment. Separate read-only review of the changed scope and archive restoration instructions using review-agent: No findings. Product/customer/hosting gates unchanged. Next action: user compares Option 2 with the retained Option 1.
+
+
+## 2026-11-19 - Retry Option 2
+
+User rejected the solid-T direction. Replaced it with two stacked geometric layers and bold Trebuchet MS/Arial Tav lettering in the shared marketing header/footer; matching SVG favicon updated. Updated the branding guide and build.md to identify the rejected attempt and current alternative. Option 1 archive checksum remained unchanged (89c5a6d38fdbb01bc0b5e77af53ace2489189a6ac41c5b8dc8e7253708d8bee4).
+
+Verification: root TypeScript and CRLF-aware Git whitespace checks passed; desktop homepage visually inspected in Chrome with accessible home links retained. Separate read-only review using review-agent of full task before/after artwork/style changes and documentation: No findings. Mobile and refreshed favicon rendering were not checked in this iteration; no build or deployment. Product and evidence gates unchanged. Next action: user visual review of replacement Option 2; Option 1 remains available.
+
+
+## 2026-11-19 - Preserve Option 2 and display Option 3
+
+Saved exact stacked-layer artwork, scoped CSS and favicon in docs/branding/option-2.json; verified all three against pre-edit content and confirmed Option 1 unchanged. Updated restoration guide. Option 3 now uses an open hexagonal connection symbol and spaced uppercase sans-serif TAV in the shared header/footer, with matching favicon source. build.md records this continued user-directed exploration.
+
+Verification: root TypeScript and CRLF-aware whitespace checks passed. Desktop Chrome homepage visually inspected; accessible Tav home labels preserved. Separate read-only review using review-agent over task before/after diff, saved option and restoration instructions: No findings. Mobile/favicon refresh not rechecked, no production build or deployment. Product and evidence gates unchanged. Next action: user visual review; both saved options can be restored independently of unrelated source.
+
+
+## 2026-11-19 - Preserve Option 3 and display Option 4
+
+Archived the exact Option 3 component, scoped CSS and favicon in docs/branding/option-3.json, comparing all three to pre-edit content. Confirmed Options 1 and 2 unchanged. Option 4 now uses a continuous rounded trace symbol and bold lowercase Avenir Next/system-fallback tav lettering in the shared header/footer, with matching favicon source. Updated the option guide and build.md.
+
+Verification: root TypeScript and CRLF-aware whitespace checks passed. Desktop Chrome homepage visually inspected; accessible Tav home labels retained. Separate read-only review using review-agent over the complete task before/after diff, archive and restoration guide: No findings. Mobile and refreshed browser-icon rendering not checked; no production build or deployment. Product/evidence gates unchanged. Next action: user visual review; Options 1-3 remain restorable.
+
+
+## 2026-11-20 - Open Git checkout prototype in Chrome
+
+Started the existing root Next.js development server on loopback port 4173 and opened http://127.0.0.1:4173/ in Chrome. Verified the Tav homepage, synthetic comparison and Open workspace link rendered. Preserved existing branding changes; no application edits, Git synchronization, dependency installs or deployment. The earlier port-8000 page was a different local app.
+
+Separate read-only operational review using review-agent: No findings. Verification covers homepage loading only, not full workspace functionality or backend persistence. Customer, hosting and recovery evidence gates unchanged. Next action: use the open prototype; export local workspace records to retain them.
+
+
+## 2026-11-20 - Option 2 symbol with Option 3 lettering
+
+Applied the archived Option 3 wordmark CSS exactly to app/marketing.css: uppercase Arial/Helvetica, weight 600, 1em size and .075em letter spacing. Preserved Option 2 symbol, gap, icon sizing and favicon. Updated build.md section 10 and docs/branding/README.md; saved option archives remain intact.
+
+Verification: desktop Chrome visually displays the combined identity; accessible Tav home labels retained. CRLF-aware Git whitespace check passed. Separate read-only review using review-agent of the complete task before/after diff and shared header/footer consumer: No findings. No application logic changes; mobile and production build not rechecked. Customer/hosting evidence unchanged. Next action: user visual review in the open local prototype.
+
+
+## 2026-11-20 - Logo branch handoff
+
+Prepared the selected Option 2 symbol and Option 3 lettering, matching favicon, saved design alternatives and design/progress documentation for the authorized Thomas-edits push to npkventures/npk-robot-traceability. Remote branch matched local starting commit e464b29. Root TypeScript and CRLF-aware whitespace checks passed; desktop visual verification is recorded above. Separate read-only review of the complete changed scope and archives: No findings. No deployment or customer-evidence change. Next action: push normally and verify the remote commit; mobile/production verification remains outside this handoff.
+
+
+## 2026-11-20 - Complete CNess-edits source handoff
+
+User authorized the full branch push including recent frontend and backend work. Resumed the clean prepared f25057e merge, compared the source workspace with the checkout, and fetched the latest remote branches. All application sources matched before this task (apart from line endings); machine-local Motion tooling/configuration remains local. Remote CNess-edits was d7236f5; Thomas-edits had advanced to b89ec9f with the selected logo. Merged that commit preserving both histories, the current product navigation and access controls, and both documentation histories. Applied the selected symbol/lettering through the shared wordmark and footer, synchronized the beta favicon, and corrected the archive restoration path. No backend logic changed in this retry.
+
+Checks: root and beta TypeScript passed after conflict resolution; source credential-pattern scan covered 366 files and found no matches (not universal secret detection). Prior core/backend/collector/build/browser results are recorded in the November 19 merge entry and were not rerun for this logo/handoff increment. Full historical whitespace check reports existing blank-line/trailing-space warnings; no functional defect is inferred from those warnings. Separate read-only review using review-agent covered the complete new merge diff, consumers, archives, documentation and publication inventory: No findings. Private environment files, caches, dependencies and build output remain excluded.
+
+State: implemented and locally type-checked, not customer-validated or deployed. Provider, managed recovery, hosted migration and customer gates remain unchanged. Next action: commit the resolved merge, push normally to CNess-edits, and verify the remote commit identity.
+
+Final handoff check: staged CRLF-aware whitespace check passed. Attempted local Chrome rendering timed out after 60 seconds while Next compiled the homepage on a slow filesystem; no fresh visual verification is claimed. This does not replace the prior recorded browser acceptance.
