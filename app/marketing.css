@@ -16,9 +16,9 @@
 .m-wrap{width:min(1320px,calc(100% - 112px));margin-inline:auto}
 .m-header{display:flex;align-items:center;justify-content:space-between;gap:32px;min-height:108px;border-bottom:1px solid var(--line)}
 .m-logo{font:600 30px/1 var(--body);letter-spacing:-2px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;min-height:44px}
-.m-brand{display:inline-flex;align-items:center;gap:.4em}
-.m-monogram{display:block;width:1.4em;height:1.4em;flex:none}
-.m-wordmark{display:block;width:2.758em;height:1.5em;overflow:visible;flex:none}
+.m-brand{display:inline-flex;align-items:center;gap:.32em}
+.m-monogram{display:block;width:1.12em;height:1.12em;flex:none}
+.m-wordmark{display:block;font-family:Arial,Helvetica,sans-serif;font-size:1em;font-weight:600;line-height:1;letter-spacing:.075em;text-transform:uppercase;flex:none}
 .m-header nav{display:flex;gap:28px}
 .m-header nav a,.m-product-link{font-size:14px;text-decoration:none;min-height:44px;display:inline-flex;align-items:center;gap:20px}
 .m-header nav a{position:relative;color:var(--muted)}
