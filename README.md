@@ -1,8 +1,10 @@
 # Tavrik robot configuration history
 
+**One-site customer access:** the `beta/` server now serves the homepage, `/login`, `/app`, `/demo`, and private APIs on one origin. Use `npm run dev` (or `npm run dev:beta`) at http://127.0.0.1:3002. The root static preview remains separate (`npm run dev:preview`). See [the product/access correction](docs/product-readiness-correction.md) for the current demo boundary, account journeys and missing billing implementation. See [single-site access and founder onboarding](docs/single-site-access.md) for invitation links, new-team provisioning and live prerequisites. Provider signup/email delivery require current configuration acceptance; this wiring is not a customer launch.
+
 Product name updated from UNIFY on October 29, 2026. Legacy `unify-*` file formats, collector module paths, `UNIFY_*` environment variables, authentication cookies, API headers and provider-operation markers remain stable for compatibility. Existing saved organization names and historical release records retain their original labels. The repository folder and configured external accounts/domains are unchanged.
 
-Latest verification: [base prompts 1–10 audit and exact manual fixes](docs/base-prompts-audit-2026-10-20.md). Core software passed 131 automated tests, both builds and hosted synthetic checks. Email activation, public/private deployment operations, managed recovery and real customer evidence remain outstanding; this is not a completed launch.
+Historical verification, October 20: [base prompts 1–10 audit and exact manual fixes](docs/base-prompts-audit-2026-10-20.md). Core software passed 131 automated tests, both builds and hosted synthetic checks. Email activation, public/private deployment operations, managed recovery and real customer evidence remain outstanding; this is not a completed launch.
 
 Prompt 10: the [advanced-capability validation plan](docs/advanced-capability-validation.md) maps the six candidates to required evidence, measurements and selection criteria. No advanced feature is selected: repeated paid use and customer-request evidence remain unverified. This follows original Stage 10's no-evidence branch.
 
@@ -28,9 +30,11 @@ The public Stages 2–3 surface of [the business brief](build.md) includes a fiv
 
 Marketing routes: `/` (concise homepage), `/services/`, `/services/configuration-history/`, `/services/run-comparison/` (interactive comparison), `/services/pilot/` (proposed pricing), `/sectors/`, `/sectors/robotic-manipulation/`, `/about/`, and `/contact/`. Supporting routes: `/demo/` (history, comparison and working-setup reference), `/compatibility/` (synthetic constraints), `/security/` (current versus planned controls). Follow the [five-minute demo script](docs/demo-script.md). All route data is public synthetic material. The compatibility registry is not a real safety assessment.
 
-The marketing design uses scoped tokens in `app/marketing.css`, shared components in `app/marketing-shell.tsx`, and progressive native browser animation in `app/marketing-motion.tsx`. Georgia and Arial require no font downloads. The configuration illustration uses CSS with reserved space; no photography, third-party image requests, or autoplay video is required. Content is visible without animation scripts. Reduced motion cancels animations and visual drift; mobile uses a static illustration and ordinary scrolling.
+The marketing design uses scoped styles in `app/marketing.css` and `app/marketing-simple.css`, shared components in `app/marketing-shell.tsx`, and progressive native browser animation in `app/marketing-motion.tsx`. System fonts require no downloads. The homepage product preview uses HTML and synthetic records; no photography, third-party image requests, or autoplay video is required. Content is visible without animation scripts and stays fully opaque during motion. Reduced motion cancels animations and visual drift; mobile disables scroll-driven drift.
 
 ## Local development
+
+**Real-test research example:** run `npm run dev:preview`, open `/workspace/?example=flowsteps`, then click **Load synthetic example**. This opt-in reconstruction uses a verified public Franka success/failure pair, with CC BY 4.0 attribution, explicit unknown configuration and clearly invented demo timestamps. The normal example is unchanged. See [source research and exact episode references](docs/real-robot-demo-research.md).
 
 Use Node.js 22.18 or newer and npm (tests use native TypeScript stripping). This workspace also has an ignored portable Node installation; on Windows, add it for the current session if Node is not on PATH:
 
@@ -40,7 +44,7 @@ npm.cmd ci --cache .cache/npm
 npm.cmd run dev
 ```
 
-With a normal Node installation, `npm` works on Windows, macOS, and Linux. Development and preview bind only to 127.0.0.1. Open http://127.0.0.1:3000.
+With a normal Node installation, `npm` works on Windows, macOS, and Linux. Development and preview bind only to 127.0.0.1. Open the combined product at http://127.0.0.1:3002. Use `npm run dev:preview` for the file-only development workspace; the static export preview uses port 3000.
 
 ```sh
 npm test
@@ -57,6 +61,8 @@ This workspace's verification browser is installed in `.cache/ms-playwright`. To
 
 ## Contact and publication
 
+The homepage prioritizes **Get started**, **Sign in** and **Explore demo**. **Book a demo** remains available through the configured contact and booking links, defaulting to the founder-supplied `https://cal.com/npk-cnesstkcp/15min`. Optional `SCHEDULING_URL` overrides it; an explicitly empty value disables scheduling and sends visitors to `/contact/#book-demo` to request a time through the founder contact. Rebuild after configuration changes. Clicking the button opens the scheduling page; Cal.com handles availability and appointment confirmation. No meeting is booked by clicking the button alone. The bottom-right helper links to booking and the synthetic demo; it is not an AI chat and does not collect messages. The displayed product preview is an illustrative layout backed by the existing synthetic comparison data. Local workspace access remains available during development.
+
 Copy `.env.example` to ignored `.env.local`. Set `CONTACT_URL` to one or more comma-separated founder `mailto:` addresses or an HTTPS scheduling link, and `SITE_URL` to the final HTTPS origin. These values are public, never credentials. Configuration is incorporated at build time; changing it requires a rebuild.
 
 ```sh
@@ -65,7 +71,7 @@ npm run build
 npm run preview
 ```
 
-Without contact configuration, the contact section explicitly says it cannot accept inquiries. Missing release configuration sets `noindex, nofollow`. The primary button opens the synthetic demo; contact uses text links. No form simulates success. The release configuration check fails until both values exist; passing it does not verify ownership or authorize publication. Demo and compatibility routes remain non-indexable even with release configuration.
+Without contact configuration, the contact section explicitly says it cannot accept inquiries. Missing release configuration sets `noindex, nofollow`. Account actions open account entry; booking links open the configured scheduling page or founder contact section. The synthetic demo remains independently accessible. No form simulates success. The release configuration check fails until both values exist; passing it does not verify ownership or authorize publication. Demo and compatibility routes remain non-indexable even with release configuration.
 
 The founder supplied cartercness4@gmail.com and 2thomaskelley@gmail.com on 2026-09-27. Founder contact links open an email to both; separate address links are also displayed. No email is sent automatically. A Netlify sign-in was previously observed, but browser tooling blocked upload and no deployment completed. The final public origin remains unset. Before resuming publication, check the selected host's current terms and pricing. For an authorized static host, upload **only `out/`**, configure HTTPS and the public origin, rebuild as needed, then verify the live title, canonical URL, mobile layout, all navigation links, and contact destination. Confirm email delivery or a booking destination with the owner without unsolicited test messages. Retain the previous export to roll back a release. Do not upload this repository, `.env.local`, documentation, or private records.
 

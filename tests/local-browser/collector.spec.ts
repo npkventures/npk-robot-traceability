@@ -20,8 +20,8 @@ test('collector capture to comparison preserves history, rejects conflicts and e
   await input.setInputFiles(resolve(directory, 'first.json'));
   await expect(page.getByRole('status')).toContainText('Capture added');
   await input.setInputFiles(resolve(directory, 'second.json'));
-  await expect(page.getByRole('combobox', { name:'Target run', exact:true })).toHaveValue('capture-run-2');
-  await page.getByRole('combobox', { name:'Successful baseline', exact:true }).selectOption('capture-run-1');
+  await expect(page.getByRole('combobox', { name:'Test to check', exact:true })).toHaveValue('capture-run-2');
+  await page.getByRole('combobox', { name:'Compare with a successful test', exact:true }).selectOption('capture-run-1');
   await expect(page.getByText('1 recorded changes', { exact:true })).toBeVisible();
   await expect(page.getByRole('region', { name:'Run comparison' }).getByText('Unknown', { exact:true })).not.toHaveCount(0);
   await input.setInputFiles(resolve(directory, 'first.json'));

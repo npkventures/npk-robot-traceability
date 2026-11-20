@@ -36,6 +36,18 @@ test('baseline metrics preserve exact references and cannot activate models; ris
  assert.equal(evaluateBaseline({...d,rows:[]}).state,'collecting_data');
  assert.equal(predictionReadiness().capabilities.every(c=>!c.available&&c.eligible_runs===null),true);assert.equal(readinessStates.includes('degraded'),true);
 });
+test('transitive job and duplicate links purge the entire boundary-spanning group with reasons',()=>{
+ const d=dataset();
+ d.rows[1].job_id=d.rows[0].job_id;
+ d.rows[2].duplicate_group=d.rows[1].duplicate_group;
+ const result=evaluateBaseline(d);
+ assert.equal(result.training_attempts.length,0);assert.equal(result.test_attempts.length,1);
+ assert.equal(result.diagnostics.exclusions.length,3);
+ assert.ok(result.diagnostics.exclusions.every(e=>e.reasons.includes('linked_group_crosses_cutoff')));
+ assert.equal(result.available,false);assert.equal(result.model,null);
+ const missing=dataset();missing.rows[0].label=null;missing.rows[0].label_available_at=null;missing.rows[0].censored=true;
+ assert.deepEqual(evaluateBaseline(missing).diagnostics.exclusions[0].reasons,['censored','missing_label']);
+});
 test('readiness API requires current project access and does not expose private cohort records',async()=>{
  Object.assign(process.env,{BETA_ENABLED:'true',BETA_AUTH_LIFECYCLE:'false',BETA_ORIGIN:'https://beta.example.invalid',SUPABASE_URL:'https://db.example.invalid',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'server'});
  const org=randomUUID(),project=randomUUID();let allowed=true;

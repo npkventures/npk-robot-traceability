@@ -52,7 +52,7 @@ test('engineer JSON and CSV flow reuses mappings, compares custom fields, preser
   await metadata.getByRole('button',{name:'Add approved snapshot'}).click();
   const second=await revision.inputValue();
   await recordRun('second',second,'failure');
-  await page.getByRole('combobox',{name:'Successful baseline',exact:true}).selectOption('first');
+  await page.getByRole('combobox',{name:'Compare with a successful test',exact:true}).selectOption('first');
   const comparison=page.getByRole('region',{name:'Run comparison'});
   await expect(comparison.getByRole('row').filter({hasText:'torque'})).toContainText('Changed');
   await expect(comparison).toContainText('12 Nm');await expect(comparison).toContainText('18 Nm');

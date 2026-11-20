@@ -24,7 +24,7 @@ export default function MarketingMotion({ children }: { children: React.ReactNod
     };
     const update = () => {
       frame = 0;
-      element.style.setProperty('--drift', Math.min(Math.max(scrollY, 0) * .055, 32) + 'px');
+      element.style.setProperty('--drift', Math.min(Math.max(scrollY, 0) * .12, 80) + 'px');
     };
     const scroll = () => { if (!frame) frame = requestAnimationFrame(update); };
     const reset = () => {
@@ -32,6 +32,7 @@ export default function MarketingMotion({ children }: { children: React.ReactNod
       animations.forEach(animation => animation.cancel());
       animations.clear();
       window.removeEventListener('scroll', scroll);
+      window.removeEventListener('resize', scroll);
       cancelAnimationFrame(frame);
       frame = 0;
       element.style.setProperty('--drift', '0px');
@@ -40,20 +41,24 @@ export default function MarketingMotion({ children }: { children: React.ReactNod
       reset();
       if (reduced.matches) return;
       element.querySelectorAll('[data-hero]').forEach((node, index) => animate(node,
-        [{ opacity: .25, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }],
+        [{ transform: 'translateY(44px)' }, { transform: 'none' }],
         { duration: 850, delay: index * 85, easing: 'cubic-bezier(.2,.7,.2,1)' }));
       const art = element.querySelector('[data-hero-art]');
-      if (art) animate(art, [{ opacity: .6, transform: 'scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 1200, easing: 'ease-out' });
+      if (art) animate(art, [{ transform: 'scale(.97)' }, { transform: 'none' }], { duration: 1200, easing: 'ease-out' });
       if ('IntersectionObserver' in window) {
         observer = new IntersectionObserver(entries => {
           entries.filter(entry => entry.isIntersecting).forEach((entry, index) => {
-            animate(entry.target, [{ opacity: .25, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }], { duration: 750, delay: Math.min(index * 70, 140), easing: 'cubic-bezier(.2,.7,.2,1)' });
+            animate(entry.target, [{ transform: 'translateY(64px)' }, { transform: 'none' }], { duration: 950, delay: Math.min(index * 70, 140), easing: 'cubic-bezier(.2,.7,.2,1)' });
             observer?.unobserve(entry.target);
           });
         }, { threshold: .08 });
         element.querySelectorAll('[data-reveal]').forEach(node => observer?.observe(node));
       }
-      if (desktop.matches) { window.addEventListener('scroll', scroll, { passive: true }); update(); }
+      if (desktop.matches) {
+        window.addEventListener('scroll', scroll, { passive: true });
+        window.addEventListener('resize', scroll);
+        update();
+      }
     };
     configure();
     reduced.addEventListener('change', configure);

@@ -49,7 +49,7 @@ test('signup and recovery use public auth API with fixed redirect, without membe
   assert.equal(response.status,200);assert.ok(!(await response.text()).includes('synthetic-passphrase'));
  }
  assert.equal(calls.length,3);
- for(const c of calls){assert.equal(new URL(c.url).searchParams.get('redirect_to'),'https://beta.example.invalid/');assert.equal(c.options.headers.apikey,'synthetic-public-key');assert.equal(JSON.parse(c.options.body).role,undefined);}
+ for(const c of calls){assert.equal(new URL(c.url).searchParams.get('redirect_to'),'https://beta.example.invalid/login');assert.equal(c.options.headers.apikey,'synthetic-public-key');assert.equal(JSON.parse(c.options.body).role,undefined);}
  assert.equal((await handle(request('signup',{email:'demo@example.invalid',password:'short'}))).status,400);
  assert.equal((await handle(request('signup',{email:'demo@example.invalid',password:'seven77'}))).status,400);
  assert.equal((await handle(request('signup',{email:'demo@example.invalid',password:'eight888'}))).status,200);

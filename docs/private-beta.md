@@ -1,5 +1,7 @@
 # Prompt 6: authenticated private beta
 
+November 9 routing update: this server now serves the public website as well as `/login`, `/app`, `/demo` and `/api/*` on one origin. See [single-site access](single-site-access.md). Organization bootstrap remains administrator-assisted; invitations require acceptance by the matching verified account. Earlier standalone-beta root URL references now correspond to `/app`.
+
 October 18 account update: [account access](account-access.md) adds registration, email-link handling, recovery/change and a no-sign-in demo. Provider activation and verified email delivery remain required. This supersedes the administrator-only password UI described in the original implementation notes below; organization access still requires membership.
 
 Implements the Stage 6 software boundary in [build.md](../build.md), sections 6–8. The separate `beta/` Next.js server uses Supabase Auth and Postgres. The root application still builds a public static synthetic demo; `/workspace/` and `/local/` there remain development-only. No Supabase project, customer account, public beta deployment, or customer data was created by this implementation. See [build progress](build-progress.md) for executed checks and outstanding gates.

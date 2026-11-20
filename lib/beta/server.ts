@@ -3,7 +3,7 @@ import { pilotSummary, validatePilotPlan, validatePilotReview } from './pilot.ts
 import { appendBundle } from './records.ts';
 import { appendCapture, emptyBundle, MAX_BYTES, parseBundle } from '../local/records.ts';
 import { boundedHistory, streamHistory } from './history.ts';
-import { approveSession, beginGoogle, claims, clearSession, cookieValue, oauthState, recentAuthentication, sessionResponse } from './auth.ts';
+import { approveSession, beginOAuth, claims, clearSession, cookieValue, oauthState, recentAuthentication, sessionResponse } from './auth.ts';
 import { EVENT_BYTES, machineAdminInput, machineId, validateMachineEvent } from './machines.ts';
 import { projectAttempt, validateAttempt, validateLifecycleEvent } from './lifecycle.ts';
 import { portalStream } from './portal-stream.ts';
@@ -76,7 +76,7 @@ export function createHandler(fetcher: typeof fetch = fetch) {
             if (code === 'invalid_credentials') throw new HttpError(401, 'Email or password is incorrect. Try again or reset your password.');
             if (response.status === 401) throw new HttpError(401, 'Your session expired. Sign in again.');
           }
-          if (/linking_required/.test(detail)) throw new HttpError(403, 'Sign in with your existing password, then explicitly approve Google under Account access.');
+          if (/linking_required/.test(detail)) throw new HttpError(403, 'Sign in with your existing password, then explicitly approve the sign-in provider under Account access.');
           if (/version_conflict|idempotency_conflict|record_conflict/.test(detail)) throw new HttpError(409, 'Conflicting save. Export your draft, reload the workspace, then merge your changes.');
           if (/last_owner/.test(detail)) throw new HttpError(409, 'Keep at least one owner.');
           if (/rotation_pending/.test(detail)) throw new HttpError(409, 'An earlier credential is still in its overlap period. Revoke it or wait before rotating again.');
@@ -128,7 +128,7 @@ export function createHandler(fetcher: typeof fetch = fetch) {
         let raw='';await readBody(request,16384,value=>{raw=value;});
         return onshapeNotification(request,remote,raw);
       }
-      if (path[0] === 'auth-options' && request.method === 'GET') return json({ google: lifecycle && process.env.BETA_GOOGLE_ENABLED === 'true', projects: process.env.BETA_PROJECTS_ENABLED === 'true', machines: process.env.BETA_MACHINES_ENABLED === 'true', executions:process.env.BETA_LIFECYCLE_ENABLED==='true',portal:process.env.BETA_PORTAL_ENABLED==='true',connectors:process.env.BETA_CONNECTORS_ENABLED==='true' });
+      if (path[0] === 'auth-options' && request.method === 'GET') return json({ github: lifecycle && process.env.BETA_GITHUB_ENABLED === 'true', google: lifecycle && process.env.BETA_GOOGLE_ENABLED === 'true', projects: process.env.BETA_PROJECTS_ENABLED === 'true', machines: process.env.BETA_MACHINES_ENABLED === 'true', executions:process.env.BETA_LIFECYCLE_ENABLED==='true',portal:process.env.BETA_PORTAL_ENABLED==='true',connectors:process.env.BETA_CONNECTORS_ENABLED==='true' });
       if (machineTransport) {
         if (process.env.BETA_MACHINES_ENABLED !== 'true') throw new HttpError(503, 'Machine ingestion is not activated.');
         const credential = request.headers.get('authorization')?.match(/^Bearer (um_[a-f0-9]{64})$/)?.[1];
@@ -155,26 +155,26 @@ export function createHandler(fetcher: typeof fetch = fetch) {
         if(result.error_code){const [status,message]=errors[result.error_code]??[503,'Machine storage unavailable.'];return json({error:message,code:result.error_code},status,status===429?{'Retry-After':'60'}:{});}
         return json(result);
       }
-      if (path[0] === 'google' && request.method === 'POST') {
-        if (!lifecycle || process.env.BETA_GOOGLE_ENABLED !== 'true') throw new HttpError(503, 'Google sign-in needs administrator setup. Email sign-in remains available.');
-        return beginGoogle(cfg);
+      if ((path[0] === 'google' || path[0] === 'github') && request.method === 'POST') {
+        if (!lifecycle || process.env[path[0]==='github'?'BETA_GITHUB_ENABLED':'BETA_GOOGLE_ENABLED'] !== 'true') throw new HttpError(503, 'This sign-in provider needs administrator setup. Email sign-in remains available.');
+        return beginOAuth(cfg,path[0]);
       }
       if (path[0] === 'oauth-callback' && request.method === 'GET') {
         const state = oauthState(cfg, request), code = url.searchParams.get('code');
-        if (!lifecycle || process.env.BETA_GOOGLE_ENABLED !== 'true' || !state || !code || code.length > 2048 || url.searchParams.has('error')) {
-          const response = clearSession(cfg); response.headers.set('Location', cfg.origin + '/?auth_error=google'); return new Response(null, { status: 303, headers: response.headers });
+        if (!lifecycle || process.env[state?.provider==='github'?'BETA_GITHUB_ENABLED':'BETA_GOOGLE_ENABLED'] !== 'true' || !state || !code || code.length > 2048 || url.searchParams.has('error')) {
+          const response = clearSession(cfg); response.headers.set('Location', cfg.origin + '/login?auth_error=' + (state?.provider ?? 'google')); return new Response(null, { status: 303, headers: response.headers });
         }
         try {
           const session = await remote('/auth/v1/token?grant_type=pkce', 'POST', { auth_code: code, code_verifier: state.verifier }, cfg.key, cfg.key);
           const verified = await remote('/auth/v1/user', 'GET', undefined, session.access_token, cfg.key);
           id(verified.id);
-          if (!verified.email_confirmed_at || (state.expectedUser && state.expectedUser !== verified.id)) throw new HttpError(403, 'Google account does not match the account you approved.');
-          const identity = verified.identities?.find((i: {provider: string}) => i.provider === 'google');
+          if (!verified.email_confirmed_at || (state.expectedUser && state.expectedUser !== verified.id)) throw new HttpError(403, 'Provider account does not match the account you approved.');
+          const identity = verified.identities?.find((i: {provider: string}) => i.provider === state.provider);
           const googleId = id(identity?.identity_id ?? identity?.id);
-          await approveSession(remote, session.access_token, verified.id, googleId, !!state.expectedUser);
-          return sessionResponse(cfg, session, '/');
+          await approveSession(remote, session.access_token, verified.id, googleId, !!state.expectedUser,state.provider);
+          return sessionResponse(cfg, session, '/app');
         } catch {
-          const response = clearSession(cfg); response.headers.set('Location', cfg.origin + '/?auth_error=google'); return new Response(null, { status: 303, headers: response.headers });
+          const response = clearSession(cfg); response.headers.set('Location', cfg.origin + '/login?auth_error=' + (state?.provider ?? 'google')); return new Response(null, { status: 303, headers: response.headers });
         }
       }
       if (path[0] === 'refresh' && request.method === 'POST') {
@@ -208,7 +208,7 @@ export function createHandler(fetcher: typeof fetch = fetch) {
       }
       if (['signup', 'recover', 'resend-confirmation'].includes(path[0]) && request.method === 'POST') {
         const data = await readBody(request, 8192); object(data);
-        const email = emailAddress(data.email), redirect = encodeURIComponent(cfg.origin + '/');
+        const email = emailAddress(data.email), redirect = encodeURIComponent(cfg.origin + '/login');
         if (path[0] === 'signup') {
           await remote(`/auth/v1/signup?redirect_to=${redirect}`, 'POST', { email, password: newPassword(data.password) }, cfg.key, cfg.key);
         } else if (path[0] === 'recover') {
@@ -287,18 +287,22 @@ export function createHandler(fetcher: typeof fetch = fetch) {
       }
       const user: User = await remote('/auth/v1/user', 'GET', undefined, token, cfg.key);
       id(user.id);
+      // A stale tab must not execute its draft under a different signed-in account.
+      const expectedAccount = request.headers.get('x-tavrik-account');
+      if (expectedAccount && expectedAccount !== user.id) throw new HttpError(401, 'Account changed. Sign in again before opening records.');
       if (lifecycle) {
         const sessionId=claims(token).session_id;
         if (!sessionId || !(await remote('/rest/v1/rpc/app_session_allowed','POST',{p_user:user.id,p_session:id(sessionId)}))) throw new HttpError(401,'Sign in again to approve this session.');
       }
-      if (path[0] === 'link-google' && request.method === 'POST') {
-        if (!lifecycle || process.env.BETA_GOOGLE_ENABLED !== 'true') throw new HttpError(503, 'Google sign-in needs administrator setup.');
+      if ((path[0] === 'link-google' || path[0] === 'link-github') && request.method === 'POST') {
+        const provider=path[0]==='link-github'?'github':'google';
+        if (!lifecycle || process.env[provider==='github'?'BETA_GITHUB_ENABLED':'BETA_GOOGLE_ENABLED'] !== 'true') throw new HttpError(503, 'This sign-in provider needs administrator setup.');
         const data=await readBody(request,8192);object(data);
         const proof=await remote('/auth/v1/token?grant_type=password','POST',{email:user.email,password:string(data.password,1024)},cfg.key,cfg.key);
         const verified=await remote('/auth/v1/user','GET',undefined,proof.access_token,cfg.key);
         try { await remote('/auth/v1/logout?scope=local','POST',undefined,proof.access_token,cfg.key); } catch { /* Unapproved proof session grants no app access. */ }
         if(verified.id!==user.id)throw new HttpError(403,'Account mismatch.');
-        return beginGoogle(cfg,user.id);
+        return beginOAuth(cfg,provider,user.id);
       }
       if (path[0] === 'password' && request.method === 'POST') {
         const data = await readBody(request, 8192); object(data);
@@ -550,7 +554,7 @@ export function createHandler(fetcher: typeof fetch = fetch) {
       const data = await readBody(request); object(data);
       if (path[2] === 'pilot-comparison') return json(await pilot('comparison', org, user.id, { runId: string(data.runId), baselineId: string(data.baselineId) }));
       if (path[2] === 'save') {
-        if (['viewer','internal_viewer'].includes(members[0].role)) throw new HttpError(403, 'Viewers cannot save records.');
+        if (!['owner','admin','engineer','member','operator'].includes(members[0].role)) throw new HttpError(403, 'Your role cannot save records. Ask a team administrator for access.');
         if (!Number.isSafeInteger(data.expected_version) || (data.expected_version as number) < 0) throw new HttpError(400, 'Invalid workspace version.');
         const current = await read('workspaces', `org_id=eq.${org}&select=${process.env.BETA_HISTORY_ENABLED === 'true' ? 'version,incremental' : 'version'}`);
         if (current[0].incremental) {

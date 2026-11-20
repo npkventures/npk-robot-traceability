@@ -18,7 +18,7 @@ test('owner enrolls, appends review and exports; responsive accessible pilot (mo
   else if(path.endsWith('/pilot-comparison'))comparisons++;
   await route.fulfill({json:response});
  });
- await page.goto('/');await page.getByRole('combobox',{name:'Organization',exact:true}).selectOption(org);
+ await page.goto('/app');await page.getByRole('combobox',{name:'Organization',exact:true}).selectOption(org);
  await page.getByText('Four-week pilot · owner dashboard',{exact:true}).click();
  await page.getByLabel('Agreed workflow and responsibilities').fill('Synthetic procedure, owner confirms hardware.');
  await page.getByLabel('Negotiated success criteria').fill('Rehearse measurement; no customer claims.');
@@ -38,6 +38,6 @@ test('owner enrolls, appends review and exports; responsive accessible pilot (mo
  for(const width of [320,768,1440]){await page.setViewportSize({width,height:960});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  expect((await new AxeBuilder({page}).include('.pilot-panel').analyze()).violations).toEqual([]);
  await page.screenshot({path:'test-results/pilot-browser/owner-dashboard.png',fullPage:true});
- await page.getByRole('combobox',{name:'Target run',exact:true}).selectOption('run-043');await page.getByRole('combobox',{name:'Successful baseline',exact:true}).selectOption('run-042');await expect.poll(()=>comparisons).toBe(1);
+ await page.getByRole('combobox',{name:'Test to check',exact:true}).selectOption('run-043');await page.getByRole('combobox',{name:'Compare with a successful test',exact:true}).selectOption('run-042');await expect.poll(()=>comparisons).toBe(1);
  role='viewer';await page.reload();await page.getByRole('combobox',{name:'Organization',exact:true}).selectOption(org);await expect(page.locator('.pilot-panel')).toHaveCount(0);
 });

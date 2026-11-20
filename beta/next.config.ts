@@ -2,6 +2,11 @@ import type { NextConfig } from 'next';
 import path from 'node:path';
 const config: NextConfig = {
   poweredByHeader: false,
+  env: {
+    TAVRIK_UNIFIED_SITE: 'true',
+    // Public founder addresses already supplied for the marketing website.
+    CONTACT_URL: process.env.CONTACT_URL ?? 'mailto:cartercness4@gmail.com,2thomaskelley@gmail.com',
+  },
   turbopack: { root: path.resolve(__dirname, '..') },
   async headers() { return [{ source: '/:path*', headers: [
     { key: 'Cache-Control', value: 'no-store' },

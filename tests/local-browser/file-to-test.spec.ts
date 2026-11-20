@@ -60,7 +60,7 @@ test('files populate varied component and CAD metadata in test drafts without re
   }
   await page.screenshot({ path: 'test-results/file-to-test.png', fullPage: true });
   await form.getByRole('button', { name: 'Record run', exact: true }).click();
-  await page.getByRole('combobox', { name:'Successful baseline', exact: true }).selectOption('seal-pass');
+  await page.getByRole('combobox', { name:'Compare with a successful test', exact: true }).selectOption('seal-pass');
   const comparison = page.getByRole('region', { name: 'Run comparison' });
   await expect(comparison.getByRole('row').filter({ hasText: 'drawing-A' })).toContainText('drawing-B');
   await expect(comparison.getByRole('row').filter({ hasText: '-60 kPa' })).toContainText('Unknown');

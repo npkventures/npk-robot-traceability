@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
-import {beginGoogle,oauthState,recentAuthentication} from '../../lib/beta/auth.ts';
+import {beginGoogle,beginOAuth,oauthState,recentAuthentication} from '../../lib/beta/auth.ts';
 import {createHandler} from '../../lib/beta/server.ts';
 const user='10000000-0000-4000-8000-000000000001',sid='20000000-0000-4000-8000-000000000001',google='30000000-0000-4000-8000-000000000001',org='40000000-0000-4000-8000-000000000001';
 const cfg={origin:'https://beta.example.invalid',url:'https://auth.example.invalid',key:'public',service:'private-test-key'};
@@ -27,8 +27,8 @@ test('Google callback success, cancellation, linking mismatch and token secrecy'
  });
  const cookie=beginGoogle(cfg).headers.get('set-cookie').split(';')[0];
  const response=await handler(request('oauth-callback?code=one&next=https://evil.invalid',undefined,cookie));
- assert.equal(response.status,303);assert.equal(response.headers.get('location'),cfg.origin+'/');assert.ok(!response.headers.get('set-cookie').includes('never-return'));assert.equal(approved,1);
- for(const path of ['oauth-callback?error=access_denied','oauth-callback?code=one']){const result=await handler(request(path));assert.equal(result.headers.get('location'),cfg.origin+'/?auth_error=google');}
+ assert.equal(response.status,303);assert.equal(response.headers.get('location'),cfg.origin+'/app');assert.ok(!response.headers.get('set-cookie').includes('never-return'));assert.equal(approved,1);
+ for(const path of ['oauth-callback?error=access_denied','oauth-callback?code=one']){const result=await handler(request(path));assert.equal(result.headers.get('location'),cfg.origin+'/login?auth_error=google');}
  const mismatch=beginGoogle(cfg,'10000000-0000-4000-8000-000000000009').headers.get('set-cookie').split(';')[0];
  assert.match((await handler(request('oauth-callback?code=two',undefined,mismatch))).headers.get('location'),/auth_error/);assert.equal(approved,1);
 });
@@ -42,6 +42,24 @@ test('refresh requires already-approved session; OAuth cannot enter through emai
  const result=await handler(request('refresh',{},'unify_refresh=old'));assert.equal(result.status,200);assert.match(result.headers.get('set-cookie'),/unify_refresh=rotated/);
  allowed=false;assert.equal((await handler(request('refresh',{},'unify_refresh=old'))).status,401);
  assert.equal((await handler(request('auth-session',{access_token:token('oauth')}))).status,403);
+});
+test('GitHub binds provider to PKCE and refuses wrong identity, disabled provider and unverified email',async()=>{
+ process.env.BETA_GITHUB_ENABLED='true';
+ let provider='github',confirmed=true,approvals=0;
+ const handler=createHandler(async(url,options)=>{
+  if(url.includes('grant_type=pkce'))return Response.json({access_token:token('oauth'),refresh_token:'app-refresh',expires_in:3600,provider_token:'discard'});
+  if(url.endsWith('/auth/v1/user'))return Response.json({id:user,email_confirmed_at:confirmed?'2026-11-13':null,identities:[{provider,identity_id:google}]});
+  if(url.endsWith('/approve_github_session')){approvals++;assert.equal(JSON.parse(options.body).p_identity,google);return Response.json(true);}
+  throw Error('Unexpected request');
+ });
+ const begin=await handler(request('github',{}));assert.equal(begin.status,200);
+ const authorize=new URL((await begin.json()).url);assert.equal(authorize.searchParams.get('provider'),'github');assert.ok(!authorize.searchParams.get('scopes').includes('repo'));
+ const cookie=begin.headers.get('set-cookie').split(';')[0];assert.equal(oauthState(cfg,request('x',undefined,cookie)).provider,'github');
+ const response=await handler(request('oauth-callback?code=one',undefined,cookie));assert.equal(response.headers.get('location'),cfg.origin+'/app');assert.ok(!response.headers.get('set-cookie').includes('discard'));
+ provider='google';assert.match((await handler(request('oauth-callback?code=two',undefined,cookie))).headers.get('location'),/auth_error=github/);
+ provider='github';confirmed=false;assert.match((await handler(request('oauth-callback?code=three',undefined,cookie))).headers.get('location'),/auth_error/);
+ process.env.BETA_GITHUB_ENABLED='false';assert.equal((await handler(request('github',{}))).status,503);
+ assert.match((await handler(request('oauth-callback?code=four',undefined,cookie))).headers.get('location'),/auth_error/);assert.equal(approvals,1);
 });
 test('logout revokes the approved session even after the access cookie expired',async()=>{
  let revoked=false;
@@ -69,6 +87,19 @@ test('database refuses unapproved auto-linked sessions and revokes direct RLS ac
  assert.equal(await visible(),0);
  await db.query('select approve_app_session($1,$2,$3,true)',[user,sid,google]);assert.equal(await visible(),1);
  await db.query('select revoke_app_session($1,$2,false)',[user,sid]);assert.equal(await visible(),0);
+ const github='30000000-0000-4000-8000-000000000003';
+ await db.query("insert into auth.identities values($1,$2,'github')",[github,user]);
+ await assert.rejects(db.query('select approve_github_session($1,$2,$3,false)',[user,sid,github]),/linking_required/);
+ await assert.rejects(db.query('select approve_github_session($1,$2,$3,true)',[user,sid,google]),/forbidden/);
+ assert.equal((await db.query('select approve_github_session($1,$2,$3,true) allowed',[user,sid,github])).rows[0].allowed,false);
+ const fresh='20000000-0000-4000-8000-000000000002';
+ await db.query('insert into auth.sessions values($1,$2,null)',[fresh,user]);
+ assert.equal((await db.query('select approve_github_session($1,$2,$3,false) allowed',[user,fresh,github])).rows[0].allowed,true);
+ await db.query('select revoke_app_session($1,$2,false)',[user,fresh]);
+ assert.equal((await db.query('select app_session_allowed($1,$2) allowed',[user,fresh])).rows[0].allowed,false);
+ await db.exec('set role authenticated');
+ await assert.rejects(db.query('select approve_github_session($1,$2,$3,true)',[user,sid,github]),/permission denied/);
+ await db.exec('reset role');
  assert.equal((await db.query('select approve_app_session($1,$2,$3,true) allowed',[user,sid,google])).rows[0].allowed,false);
  }finally{await db.close();}
 });

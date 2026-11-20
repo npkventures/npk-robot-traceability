@@ -1,9 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readSiteConfig } from '../lib/site-config.mjs';
+import { readSiteConfig, readDemoBooking } from '../lib/site-config.mjs';
 test('missing configuration stays a non-indexable preview', () => {
   assert.equal(readSiteConfig({}).launchReady, false);
   assert.equal(readSiteConfig({ CONTACT_URL:'mailto:founder@example.com' }).launchReady, false);
+});
+test('demo booking has an honest fallback and rejects unsafe scheduling links', () => {
+  assert.deepEqual(readDemoBooking({}), { schedulingUrl:'https://cal.com/npk-cnesstkcp/15min', href:'https://cal.com/npk-cnesstkcp/15min' });
+  assert.deepEqual(readDemoBooking({ SCHEDULING_URL:'' }), { schedulingUrl:null, href:'/contact/#book-demo' });
+  assert.equal(readDemoBooking({ SCHEDULING_URL:'https://example.com/tavrik/demo' }).href,'https://example.com/tavrik/demo');
+  for (const value of ['javascript:alert(1)','http://example.com/book','https://user:password@example.com/book','invalid','https://localhost/book']) assert.throws(()=>readDemoBooking({ SCHEDULING_URL:value }));
 });
 test('supported contact and canonical origin', () => {
   assert.deepEqual(readSiteConfig({ CONTACT_URL:'mailto:founder@example.com', SITE_URL:'https://example.com/' }), { contactUrl:'mailto:founder@example.com', siteUrl:'https://example.com', launchReady:true });

@@ -4,7 +4,12 @@ import AxeBuilder from '@axe-core/playwright';
 test('Home is explicit on every screen and returns to the landing page', async ({ page }) => {
   for (const path of ['/', '/demo/', '/compatibility/', '/security/']) {
     await page.goto(path);
-    const home = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Home', exact: true });
+    const menu = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Menu', exact: true });
+    if (await page.locator('.t-card-header').count()) {
+      await expect(menu).toBeVisible();
+      await menu.click();
+    }
+    const home = path === '/demo/' ? page.getByRole('link', { name: 'Tavrik', exact: true }) : page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Home', exact: true });
     await expect(home).toBeVisible();
     await home.click();
     await expect(page).toHaveURL('http://127.0.0.1:3000/');
@@ -49,9 +54,11 @@ test('homepage exploration filters real results and resets evidence with scenari
 });
 test('homepage runs the comparison and presents an honest pilot offer', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('a.m-button')).toHaveCount(1);
+  await expect(page.locator('.t-hero').getByRole('link', {name:'Get started'})).toHaveAttribute('href','/login/?mode=signup');
+  await page.goto('/contact/');
+  await expect(page.locator('#book-demo').getByRole('link', {name:'Choose a demo time'})).toHaveAttribute('href','https://cal.com/npk-cnesstkcp/15min');
   await page.goto('/services/pilot/');
-  await expect(page.getByText('USD 1,000', { exact:false })).toBeVisible();
+  await expect(page.getByText('Pricing is tailored to your team after a demo and discussion.', { exact:true })).toBeVisible();
   await page.goto('/services/run-comparison/');
   await expect(page.getByText('6 recorded changes', { exact:true })).toBeVisible();
   for (const value of ['gripper-fw-1.8','gripper-fw-1.9','teleop-block-A-v12','teleop-block-A-v13']) await expect(page.getByRole('cell', { name:value, exact:true })).toBeVisible();
@@ -72,7 +79,7 @@ test('compatibility states change without interpreting no-match as safe', async 
 test('public links resolve and security claims stay factual', async ({ page }) => {
   for (const path of ['/', '/demo/', '/compatibility/', '/security/']) {
     await page.goto(path);
-    for (const href of await page.locator('a[href^="/"]').evaluateAll(links => [...new Set(links.map(a => a.getAttribute('href')!))])) expect((await page.request.get(href)).status()).toBe(200);
+    for (const href of await page.locator('a[href^="/"]').evaluateAll(links => [...new Set(links.map(a => a.getAttribute('href')!))])) expect((await page.request.get(href)).status(), href).toBe(200);
     await expect(page.locator('img:not([alt])')).toHaveCount(0);
   }
   await expect(page.getByText('No Tavrik certifications or independent security audits are claimed.', { exact:true })).toBeVisible();

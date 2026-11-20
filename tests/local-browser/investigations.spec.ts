@@ -3,9 +3,20 @@ import {readFile} from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 test('investigate, confirm with evidence, export and restore exact history',async({page})=>{
  await page.goto('/workspace/');await page.getByRole('button',{name:'Load synthetic example'}).click();
- await page.getByRole('combobox',{name:'Target run',exact:true}).selectOption('run-043');
+ await page.getByRole('combobox',{name:'Test to check',exact:true}).selectOption('run-043');
+ await page.getByText('Investigate this test',{exact:true}).click();
  const panel=page.getByRole('region',{name:'Investigation',exact:true});
- await panel.getByRole('button',{name:'Use suggested baseline'}).click();
+ await panel.getByRole('button',{name:'Use this successful test'}).click();
+ const summary=panel.getByRole('region',{name:'Investigation summary',exact:true});
+ await expect(summary).toContainText('recorded changes');
+ await summary.getByLabel('Find analysis field').fill('no-such-field');
+ await expect(summary.getByRole('status')).toHaveText(/Showing 0/);
+ await expect(summary).toContainText('No fields match');
+ await summary.getByLabel('Find analysis field').fill('');
+ await summary.getByLabel('Filter analysis').selectOption('All');
+ const handoffDownload=page.waitForEvent('download');await summary.getByRole('button',{name:'Download investigation handoff'}).click();
+ const handoff=await readFile((await (await handoffDownload).path())!,'utf8');
+ expect(handoff).toContain('SYNTHETIC EXAMPLE');expect(handoff).toContain('snap-043 revision 1');
  const form=panel.getByRole('form',{name:'Record investigation'});
  await form.getByLabel('Investigation author').fill('Synthetic reviewer');await form.getByLabel('Investigation note',{exact:true}).fill('Inspect calibration provenance.');
  await form.getByRole('button',{name:'Append investigation entry'}).click();
@@ -16,9 +27,10 @@ test('investigate, confirm with evidence, export and restore exact history',asyn
  await form.getByRole('button',{name:'Append investigation entry'}).click();await expect(panel.getByText('Revision 2 · confirmed-by-engineer',{exact:true})).toBeVisible();
  const reportDownload=page.waitForEvent('download');await panel.getByRole('button',{name:'Export investigation report'}).click();const report=JSON.parse(await readFile((await (await reportDownload).path())!,'utf8'));
  expect(report.history).toHaveLength(2);expect(report.evidence[1].snapshot.revision).toBe(1);expect(report.synthetic).toBe(true);
+ expect(report.analysis.target.snapshot.revision).toBe(1);
  const bundleDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Export JSON',exact:true}).click();const raw=await readFile((await (await bundleDownload).path())!,'utf8');
  await page.reload();await page.getByLabel('Import JSON').setInputFiles({name:'synthetic-investigation.json',mimeType:'application/json',buffer:Buffer.from(raw)});
- await page.getByRole('combobox',{name:'Target run',exact:true}).selectOption('run-043');await panel.getByLabel('Investigation history').selectOption(report.investigation.id);
+ await page.getByRole('combobox',{name:'Test to check',exact:true}).selectOption('run-043');await page.getByText('Investigate this test',{exact:true}).click();await panel.getByLabel('Investigation history').selectOption(report.investigation.id);
  await expect(panel.getByText('Revision 2 · confirmed-by-engineer',{exact:true})).toBeVisible();
  for(const width of [320,1440]) {await page.setViewportSize({width,height:960});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);await page.screenshot({path:`test-results/investigation-${width}.png`,fullPage:true});}
 });

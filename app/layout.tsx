@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { readSiteConfig } from "../lib/site-config.mjs";
 import "./globals.css";
+import "./ui.css";
 
 const config = readSiteConfig();
 const title = "Tavrik — Know what changed. Keep the setup that worked.";

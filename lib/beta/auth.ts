@@ -21,25 +21,30 @@ export function sessionResponse(cfg: Config, session: {access_token: string; ref
 }
 export function clearSession(cfg: Config){const response=Response.json({signedOut:true},{headers:{'Cache-Control':'private, no-store'}});for(const name of ['unify_session','unify_refresh','unify_oauth'])response.headers.append('Set-Cookie',cookie(cfg,name,'',0,name==='unify_oauth'));return response;}
 function sign(cfg: Config,value: string){return createHmac('sha256',cfg.service).update('unify-oauth-v1:'+value).digest('base64url');}
-export function beginGoogle(cfg: Config, expectedUser?: string){
+export type OAuthProvider = 'google' | 'github';
+export function beginGoogle(cfg: Config, expectedUser?: string){return beginOAuth(cfg,'google',expectedUser);}
+export function beginOAuth(cfg: Config, provider: OAuthProvider, expectedUser?: string){
   const verifier=randomBytes(32).toString('base64url');
-  const payload=Buffer.from(JSON.stringify({verifier,expires:Date.now()+600000,expectedUser})).toString('base64url');
+  const payload=Buffer.from(JSON.stringify({verifier,expires:Date.now()+600000,expectedUser,provider})).toString('base64url');
   const url=new URL(cfg.url+'/auth/v1/authorize');
-  url.search=new URLSearchParams({provider:'google',redirect_to:cfg.origin+'/api/oauth-callback',code_challenge:createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'s256',scopes:'openid email profile',prompt:'select_account'}).toString();
+  url.search=new URLSearchParams({provider,redirect_to:cfg.origin+'/api/oauth-callback',code_challenge:createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'s256',scopes:provider==='google'?'openid email profile':'read:user user:email',...(provider==='google'?{prompt:'select_account'}:{})}).toString();
   return Response.json({url:url.href},{headers:{'Cache-Control':'private, no-store','Set-Cookie':cookie(cfg,'unify_oauth',payload+'.'+sign(cfg,payload),600,true)}});
 }
-export function oauthState(cfg: Config,request: Request): {verifier:string;expires:number;expectedUser?:string}|null{
+export function oauthState(cfg: Config,request: Request): {verifier:string;expires:number;expectedUser?:string;provider:OAuthProvider}|null{
   try{
     const [payload,signature]=cookieValue(request,'unify_oauth').split('.');if(!payload||!signature)return null;
     const a=Buffer.from(signature),b=Buffer.from(sign(cfg,payload));if(a.length!==b.length||!timingSafeEqual(a,b))return null;
     const state=JSON.parse(Buffer.from(payload,'base64url').toString());
     if(!Number.isFinite(state.expires)||state.expires<Date.now()||typeof state.verifier!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(state.verifier))return null;
+    if(!['google','github'].includes(state.provider))return null;
     return state;
   }catch{return null;}
 }
-export async function approveSession(remote: Remote,access: string,userId: string,google: string|null=null,link=false){
+export async function approveSession(remote: Remote,access: string,userId: string,google: string|null=null,link=false,provider:OAuthProvider='google'){
   const payload=claims(access);
   if(payload.sub!==userId||!payload.session_id||!/^[a-f0-9-]{36}$/i.test(payload.session_id))throw Error('Invalid authenticated session.');
-  const allowed=await remote('/rest/v1/rpc/approve_app_session','POST',{p_user:userId,p_session:payload.session_id,p_google:google,p_link:link});
+  const allowed=provider==='github'
+    ?await remote('/rest/v1/rpc/approve_github_session','POST',{p_user:userId,p_session:payload.session_id,p_identity:google,p_link:link})
+    :await remote('/rest/v1/rpc/approve_app_session','POST',{p_user:userId,p_session:payload.session_id,p_google:google,p_link:link});
   if(allowed!==true)throw Error('Session is no longer active.');
 }

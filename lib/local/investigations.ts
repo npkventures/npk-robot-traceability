@@ -1,6 +1,7 @@
 import { compareRuns, fields, hardwareStale, snapshotFor } from '../demo/records.ts';
 import type { Records } from '../demo/records.ts';
 import { compareCustom } from './custom.ts';
+import { investigationAnalysis } from './investigation-analysis.ts';
 
 export const investigationStates = ['investigating', 'hypothesis', 'confirmed-by-engineer', 'unresolved'] as const;
 export type Investigation = {
@@ -59,5 +60,5 @@ export function investigationReport(records: Records, history: Investigation[], 
     const snapshot = snapshotFor(records,run);
     return {run, snapshot, staleManualHardware: hardwareStale(snapshot,run), unavailableCoreEvidence: fields.filter(([key]) => !snapshot.provenance[key].available).map(([key]) => key), unavailableCustomEvidence:(snapshot.custom ?? []).filter(f=>!f.provenance.available).map(f=>f.id)};
   });
-  return {format:'unify-investigation-report',version:1,synthetic,disclaimer:'Recorded differences do not prove causation. Conclusions are reported by the named engineer; evidence availability is not independently verified. A retest reference alone does not establish success or comparable conditions.',investigation:latest,history:revisions,comparison:{rows:comparison.rows,warnings:comparison.warnings},evidence,retests:retests.map(run=>({runId:run.id,outcome:run.outcome,comparisonToBaseline:investigationComparison(records,latest.baselineId,run.id).warnings}))};
+  return {format:'unify-investigation-report',version:1,synthetic,disclaimer:'Recorded differences do not prove causation. Conclusions are reported by the named engineer; evidence availability is not independently verified. A retest reference alone does not establish success or comparable conditions.',investigation:latest,history:revisions,comparison:{rows:comparison.rows,warnings:comparison.warnings},analysis:investigationAnalysis(comparison),evidence,retests:retests.map(run=>({runId:run.id,outcome:run.outcome,comparisonToBaseline:investigationComparison(records,latest.baselineId,run.id).warnings}))};
 }

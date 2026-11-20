@@ -120,7 +120,7 @@
 .m-dark-panel p{color:var(--muted)}
 .marketing .m-dark-panel a:hover{color:#f4e2b7}
 .m-dark-panel .layer-explorer{max-width:700px;margin:auto}
-.m-dark-panel .m-sculpture{max-width:480px;margin:auto}
+.m-dark-panel .m-sculpture{max-width:480px;margin:auto;transform:none}
 .m-dark-panel .m-art-caption{color:#bcc1b4}
 .m-dark-panel .live-comparison{border:0;border-radius:0}
 .m-comparison{padding-bottom:40px}
